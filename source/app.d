@@ -61,10 +61,14 @@ void main(string[] args)
     import core.time : seconds;
 
     Configuration config;
+    string specifiedCookie;
 
     auto results = getopt(args,
         getoptConfig.caseSensitive,
         getoptConfig.passThrough,
+        "c|cookie",
+            "Cookie to download gallery of (see README).",
+            &specifiedCookie,
         "d|dir",
             "Target image directory.",
             &config.targetDirectory,
@@ -98,6 +102,39 @@ void main(string[] args)
         import std.path : baseName;
         writefln("usage: %s [options] [json file]", args[0].baseName);
         defaultGetoptPrinter(string.init, results.options);
+        return;
+    }
+
+    if (specifiedCookie.length)
+    {
+        import std.algorithm.searching : canFind;
+
+        const listFileContents = getImageList(specifiedCookie);
+
+        if (listFileContents.canFind(`"result":{"success":true,`))
+        {
+            // Failed, probably incorrect cookie
+            writeln("failed to fetch image list. incorrect cookie?");
+            return;
+        }
+
+        try
+        {
+            import std.stdio : File;
+            auto listFile = File(config.listFile, "w");
+            listFile.writeln(listFileContents);
+        }
+        catch (Exception e)
+        {
+            writefln(`FAILED TO WRITE LIST FILE "%s"`, config.listFile);
+            writeln(e);
+            return;
+        }
+    }
+
+    if (!config.listFile.exists)
+    {
+        writefln(`image list JSON file "%s" does not exist.`, config.listFile);
         return;
     }
 
