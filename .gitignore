@@ -22,3 +22,9 @@ docs/
 
 # Code coverage
 *.lst
+
+# binaries
+prntscget
+
+# screenshot list jsons
+target.json
