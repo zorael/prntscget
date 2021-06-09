@@ -39,7 +39,7 @@ struct Configuration
     uint delayBetweenImagesSeconds = 60;
 
     ///
-    uint start;
+    uint startingImagePosition;
 
     ///
     uint numberToDownload = uint.max;
@@ -73,8 +73,8 @@ void main(string[] args)
             "Target image directory.",
             &config.targetDirectory,
         "s|start",
-            "Starting image position",
-            &config.start,
+            "Starting image position.",
+            &config.startingImagePosition,
         "n|num",
             "Number of images to download",
             &config.numberToDownload,
@@ -172,7 +172,7 @@ void main(string[] args)
     auto range = listJSON["result"]["screens"]
         .array
         .retro
-        .drop(config.start)
+        .drop(config.startingImagePosition)
         .take(min(config.numberToDownload, numImages));
 
     foreach (imageJSON; range)
