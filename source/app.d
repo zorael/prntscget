@@ -275,7 +275,7 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
                 if (retry == 0)
                 {
                     import std.stdio : writef;
-                    writef("%s --> %s: ", image.url, image.localPath);
+                    writef("[%4d] %s --> %s: ", image.number, image.url, image.localPath);
                     stdout.flush();
                 }
 
