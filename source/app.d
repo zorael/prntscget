@@ -2,7 +2,7 @@
 module prntscget;
 
 import std.array : Appender;
-import std.stdio;
+import std.stdio : writefln, writeln;
 import core.time : Duration;
 
 
@@ -51,7 +51,7 @@ void main(string[] args)
 {
     import std.algorithm.comparison : min;
     import std.array : Appender;
-    import std.file : readText;
+    import std.file : exists, readText;
     import std.getopt : defaultGetoptPrinter, getopt, getoptConfig = config;
     import std.json : parseJSON;
     import std.range : drop, retro, take;
@@ -135,7 +135,7 @@ void main(string[] args)
     foreach (imageJSON; range)
     {
         import std.array : replace, replaceFirst;
-        import std.file : exists;
+        import std.file : exists, getSize;
         import std.path : buildPath, extension;
 
         immutable url = imageJSON["url"].str;
@@ -180,6 +180,8 @@ void downloadAllImages(const Configuration config, const Appender!(RemoteImage[]
     imageloop:
     foreach (immutable i, const image; images)
     {
+        import std.stdio : stdout, write;
+
         foreach (immutable retry; 0..config.retriesPerFile)
         {
             import requests : TimeoutException;
@@ -194,6 +196,7 @@ void downloadAllImages(const Configuration config, const Appender!(RemoteImage[]
 
                 if (retry == 0)
                 {
+                    import std.stdio : writef;
                     writef("%s --> %s: ", image.url, image.localPath);
                     stdout.flush();
                 }
@@ -244,6 +247,7 @@ bool downloadImage(const string url, const string imagePath,
     // Confirm size so we didn't download a 366-byte 505 info page
     if ((res.code == 200) && (res.responseBody.length > minFileSizeThreshold))
     {
+        import std.stdio : File;
         auto file = File(imagePath, "w");
         file.rawWrite(res.responseBody.data);
         return true;
