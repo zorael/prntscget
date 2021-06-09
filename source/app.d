@@ -81,7 +81,7 @@ void main(string[] args)
     import std.file : exists, readText;
     import std.getopt : defaultGetoptPrinter, getopt, getoptConfig = config;
     import std.json : parseJSON;
-    import std.range : drop, retro, take;
+    import std.range : drop, enumerate, retro, take;
     import core.time : seconds;
 
     Configuration config;
@@ -193,9 +193,10 @@ void main(string[] args)
         .array
         .retro
         .drop(config.startingImagePosition)
-        .take(min(config.numberToDownload, numImages));
+        .take(min(config.numberToDownload, numImages))
+        .enumerate;
 
-    foreach (imageJSON; range)
+    foreach (immutable i, imageJSON; range)
     {
         import std.array : replace, replaceFirst;
         import std.file : exists, getSize;
