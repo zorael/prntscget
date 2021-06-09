@@ -151,7 +151,7 @@ void main(string[] args)
                 .replaceFirst(":", "m") ~ url.extension;
         immutable localPath = buildPath(config.targetDirectory, filename);
 
-        if (!localPath.exists)
+        if (!localPath.exists || (getSize(localPath) < config.minFileSizeThreshold))
         {
             images ~= RemoteImage(url, localPath);
         }
