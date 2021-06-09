@@ -1,4 +1,8 @@
-///
+/++
+    Lightshot `prnt.sc` (and `prntscr.com`) gallery downloader.
+
+    https://app.prntscr.com/en/index.html
+ +/
 module prntscget;
 
 import std.array : Appender;
@@ -6,50 +10,59 @@ import std.stdio : writefln, writeln;
 import core.time : Duration;
 
 
-///
+/++
+    Embodies the notion of an image to be downloaded.
+ +/
 struct RemoteImage
 {
-    ///
+    /// HTTP URL of the image.
     string url;
 
-    ///
+    /// Local path to save the remote image to.
     string localPath;
 }
 
 
-///
+/++
+    Aggregate of values supplied at the command-line.
+ +/
 struct Configuration
 {
-    ///
+    /// File to save the JSON list of images to.
     string listFile = "target.json";
 
-    ///
+    /// How many times to retry downloading a file before proceeding with the next one.
     uint retriesPerFile = 100;
 
-    ///
+    /// The minimum image size in bytes to consider as a successful download.
     uint minFileSizeThreshold = 400;
 
-    ///
+    /// Directory to save images to.
     string targetDirectory = "images";
 
-    ///
+    /// Reques timeout when downloading an image.
     uint requestTimeoutSeconds = 60;
 
-    ///
+    /// How many seconds to wait inbetween image downloads.
     uint delayBetweenImagesSeconds = 60;
 
-    ///
+    /// The number of images to skip when downloading (the starting position).
     uint startingImagePosition;
 
-    ///
+    /// How many images to download.
     uint numberToDownload = uint.max;
 
-    ///
+    /// Whether or not this is a dry run.
     bool dryRun;
 }
 
 
-///
+/++
+    Program entry point.
+
+    Params:
+        args = Arguments passed at the command line.
+ +/
 void main(string[] args)
 {
     import std.algorithm.comparison : min;
@@ -203,13 +216,21 @@ void main(string[] args)
     writefln("total images: %s -- this will take a MINIMUM of %s.",
         images.data.length, images.data.length*config.delayBetweenImagesSeconds.seconds);
 
-    downloadAllImages(config, images);
+    downloadAllImages(images, config);
     writeln("done.");
 }
 
 
-///
-void downloadAllImages(const Configuration config, const Appender!(RemoteImage[]) images)
+/++
+    Downloads all images in the passed `images` list.
+
+    Images are saved to the filename specified in each [RemoteImage.localPath].
+
+    Params:
+        images = The list of images to download.
+        config = The current program [Configuration].
+ +/
+void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuration config)
 {
     import core.time : seconds;
 
@@ -272,7 +293,18 @@ void downloadAllImages(const Configuration config, const Appender!(RemoteImage[]
 }
 
 
-///
+/++
+    Downloads an image from the `prnt.sc` server.
+
+    Params:
+        url = HTTP URL to fetch.
+        imagePath = Filename to save the downloaded image to.
+        requestTimeout = Timeout to use when downloading.
+
+    Returns:
+        `true` if a file was successfully downloaded (including passing the
+        size check); `false` if not.
+ +/
 bool downloadImage(const string url, const string imagePath,
     const Duration requestTimeout, const uint minFileSizeThreshold)
 {
@@ -296,7 +328,17 @@ bool downloadImage(const string url, const string imagePath,
 }
 
 
-///
+/++
+    Ensures the target image directory exists, creating it if it does not and
+    returning false if it fails to.
+
+    Params:
+        config = The current [Configuration].
+
+    Returns:
+        `true` if the directory already exists or if it was succesfully created;
+        `false` if it could not be.
+ +/
 bool ensureImageDirectory(const Configuration config)
 {
     import std.file : exists, isDir, mkdir;
@@ -315,7 +357,15 @@ bool ensureImageDirectory(const Configuration config)
 }
 
 
-///
+/++
+    Fetches the JSON list of images for a passed cookie from the `prnt.sc` server.
+
+    Params:
+        cookie = `__auth` cookie to fetch the gallery of.
+
+    Returns:
+        A buffer struct containing the response body of the request.
+ +/
 auto getImageList(const string cookie)
 {
     import requests : Request;
