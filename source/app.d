@@ -153,7 +153,7 @@ int main(string[] args)
         try
         {
             import std.stdio : File;
-            File(config.listFile, "w").writeln(imageListJSON);
+            File(config.listFile, "w").writeln(imageListJSON.toPrettyString);
         }
         catch (JSONException e)
         {
