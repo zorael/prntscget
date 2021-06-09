@@ -20,6 +20,9 @@ struct RemoteImage
 
     /// Local path to save the remote image to.
     string localPath;
+
+    /// Image index (number in list JSON).
+    size_t number;
 }
 
 
@@ -199,7 +202,7 @@ void main(string[] args)
 
         if (!localPath.exists || (getSize(localPath) < config.minFileSizeThreshold))
         {
-            images ~= RemoteImage(url, localPath);
+            images ~= RemoteImage(url, localPath, i);
         }
         else
         {
