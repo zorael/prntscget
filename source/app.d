@@ -77,8 +77,11 @@ struct Configuration
 
     Params:
         args = Arguments passed at the command line.
+
+    Returns:
+        zero on success, non-zero on errors.
  +/
-void main(string[] args)
+int main(string[] args)
 {
     import std.algorithm.comparison : min;
     import std.array : Appender;
@@ -128,7 +131,7 @@ void main(string[] args)
         import std.path : baseName;
         writefln("usage: %s [options] [json file (target.json)]", args[0].baseName);
         defaultGetoptPrinter(string.init, results.options);
-        return;
+        return 0;
     }
 
     if (specifiedCookie.length)
@@ -141,7 +144,7 @@ void main(string[] args)
         {
             // Failed, probably incorrect cookie
             writeln("failed to fetch image list. incorrect cookie?");
-            return;
+            return 1;
         }
 
         try
@@ -154,14 +157,14 @@ void main(string[] args)
         {
             writefln(`FAILED TO WRITE LIST FILE "%s"`, config.listFile);
             writeln(e);
-            return;
+            return 1;
         }
     }
 
     if (!config.listFile.exists)
     {
         writefln(`image list JSON file "%s" does not exist.`, config.listFile);
-        return;
+        return 1;
     }
 
     try
@@ -169,14 +172,14 @@ void main(string[] args)
         if (!ensureImageDirectory(config))
         {
             writeln(`"%s" is not a directory; remove it and try again.`);
-            return;
+            return 1;
         }
     }
     catch (Exception e)
     {
         writefln(`FAILED TO ENSURE TARGET IMAGE DIRECTORY "%s"`, config.targetDirectory);
         writeln(e);
-        return;
+        return 1;
     }
 
     auto listJSON = config.listFile
@@ -187,7 +190,7 @@ void main(string[] args)
     if (!numImages)
     {
         writeln("no images to fetch.");
-        return;
+        return 0;
     }
 
     Appender!(RemoteImage[]) images;
@@ -227,7 +230,7 @@ void main(string[] args)
     if (!images.data.length)
     {
         writefln("no images to fetch -- all %d are already downloaded.", numImages);
-        return;
+        return 0;
     }
 
     if (numExistingImages > 0)
@@ -239,7 +242,9 @@ void main(string[] args)
         images.data.length, images.data.length*config.delayBetweenImagesSeconds.seconds);
 
     downloadAllImages(images, config);
+
     writeln("done.");
+    return 0;
 }
 
 
@@ -251,8 +256,11 @@ void main(string[] args)
     Params:
         images = The list of images to download.
         config = The current program [Configuration].
+
+    Returns:
+        `true` if downloading was uneventful, `false` if there was an exception.
  +/
-void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuration config)
+bool downloadAllImages(const Appender!(RemoteImage[]) images, const Configuration config)
 {
     import core.time : seconds;
 
@@ -309,9 +317,12 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
                 writefln("EXCEPTION CAUGHT! index %d retry %d", i, retry);
                 writeln(e);
                 writeln();
+                return false;
             }
         }
     }
+
+    return true;
 }
 
 
