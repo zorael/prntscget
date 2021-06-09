@@ -280,3 +280,39 @@ bool ensureImageDirectory(const Configuration config)
 
     return true;
 }
+
+
+///
+auto getImageList(const string cookie)
+{
+    import requests : Request;
+    import core.time : seconds;
+
+    enum url = "https://api.prntscr.com/v1/";
+    enum post = `{"jsonrpc":"2.0","method":"get_user_screens","id":1,"params":{"count":10000}}`;
+
+    immutable headers =
+    [
+        "authority"       : "api.prntscr.com",
+        "pragma"          : "no-cache",
+        "cache-control"   : "no-cache",
+        "accept"          : "application/json, text/javascript, */*; q=0.01",
+        "user-agent"      : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " ~
+            "(KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36",
+        "content-type"    : "application/json",
+        "origin"          : "https://prntscr.com",
+        "sec-fetch-site"  : "same-site",
+        "sec-fetch-mode"  : "cors",
+        "sec-fetch-dest"  : "empty",
+        "referer"         : "https://prntscr.com/gallery.html",
+        "accept-language" : "fr-CA,fr;q=0.9,fr-FR;q=0.8,en-US;q=0.7,en;q=0.6,it;q=0.5,ru;q=0.4",
+        "cookie"          : "__auth=" ~ cookie,
+    ];
+
+    Request req;
+    req.timeout = 60.seconds;
+    req.keepAlive = false;
+    req.addHeaders(headers);
+    auto res = req.post(url, post, "application/x-www-form-urlencoded");
+    return res.responseBody.data;
+}
