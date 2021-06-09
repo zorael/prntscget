@@ -76,7 +76,7 @@ void main(string[] args)
             "Starting image position.",
             &config.startingImagePosition,
         "n|num",
-            "Number of images to download",
+            "Number of images to download.",
             &config.numberToDownload,
         "r|retries",
             "How many times to retry downloading an image.",
@@ -85,7 +85,7 @@ void main(string[] args)
             "Delay between image downloads, in seconds.",
             &config.delayBetweenImagesSeconds,
         "timeout",
-            "Download attempt read timeout.",
+            "Download attempt read timeout, in seconds.",
             &config.requestTimeoutSeconds,
         "min",
             "Minimum file size to accept as a successful download (in bytes).",
@@ -95,12 +95,10 @@ void main(string[] args)
             &config.dryRun,
     );
 
-    writeln(config);
-
-    if (results.helpWanted || (args.length != 2))
+    if (results.helpWanted)
     {
         import std.path : baseName;
-        writefln("usage: %s [options] [json file]", args[0].baseName);
+        writefln("usage: %s [options] [json file (target.json)]", args[0].baseName);
         defaultGetoptPrinter(string.init, results.options);
         return;
     }
@@ -148,10 +146,8 @@ void main(string[] args)
     }
     catch (Exception e)
     {
-        writeln();
-        writeln("FAILED TO ENSURE TARGET IMAGE DIRECTORY");
+        writefln(`FAILED TO ENSURE TARGET IMAGE DIRECTORY "%s"`, config.targetDirectory);
         writeln(e);
-        writeln();
         return;
     }
 
