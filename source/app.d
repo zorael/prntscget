@@ -122,7 +122,7 @@ void main(string[] args)
 
         const listFileContents = getImageList(specifiedCookie);
 
-        if (listFileContents.canFind(`"result":{"success":true,`))
+        if (!listFileContents.canFind(`"result":{"success":true,`))
         {
             // Failed, probably incorrect cookie
             writeln("failed to fetch image list. incorrect cookie?");
