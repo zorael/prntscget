@@ -5,9 +5,13 @@
  +/
 module prntscget;
 
+private:
+
 import std.array : Appender;
 import std.stdio : writefln, writeln;
 import core.time : Duration;
+
+public:
 
 
 /++
