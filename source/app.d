@@ -23,6 +23,14 @@ struct RemoteImage
 
     /// Image index (number in list JSON).
     size_t number;
+
+    /// Constructor.
+    this(const string url, const string localPath, const size_t number)
+    {
+        this.url = url;
+        this.localPath = localPath;
+        this.number = number;
+    }
 }
 
 
