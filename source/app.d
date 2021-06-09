@@ -188,6 +188,7 @@ void main(string[] args)
 
     Appender!(RemoteImage[]) images;
     images.reserve(numImages);
+    uint numExistingImages;
 
     auto range = listJSON["result"]["screens"]
         .array
@@ -215,7 +216,7 @@ void main(string[] args)
         }
         else
         {
-            writeln(localPath, " exists");
+            ++numExistingImages;
         }
     }
 
@@ -223,6 +224,11 @@ void main(string[] args)
     {
         writefln("no images to fetch -- all %d are already downloaded.", numImages);
         return;
+    }
+
+    if (numExistingImages > 0)
+    {
+        writefln("(skipping %d images already in directory.)", numExistingImages);
     }
 
     writefln("total images: %s -- this will take a MINIMUM of %s.",
