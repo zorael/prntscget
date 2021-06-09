@@ -87,7 +87,7 @@ int main(string[] args)
     import std.array : Appender;
     import std.file : exists, readText;
     import std.getopt : defaultGetoptPrinter, getopt, getoptConfig = config;
-    import std.json : parseJSON;
+    import std.json : JSONException, parseJSON;
     import std.range : drop, enumerate, retro, take;
     import core.time : seconds;
 
@@ -138,20 +138,28 @@ int main(string[] args)
     {
         import std.algorithm.searching : canFind;
 
+        writefln(`fetching image list JSON and saving into "%s"...`, config.listFile);
         const listFileContents = getImageList(specifiedCookie);
 
         if (!listFileContents.canFind(`"result":{"success":true,`))
         {
-            // Failed, probably incorrect cookie
             writeln("failed to fetch image list. incorrect cookie?");
             return 1;
         }
 
+        immutable imageListJSON = parseJSON(cast(string)listFileContents);
+        writefln("%d image(s) found.", imageListJSON["result"]["total"].integer);
+
         try
         {
             import std.stdio : File;
-            auto listFile = File(config.listFile, "w");
-            listFile.writeln(listFileContents);
+            File(config.listFile, "w").writeln(imageListJSON);
+        }
+        catch (JSONException e)
+        {
+            writefln(`FAILED TO PARSE LIST FILE "%s"`, config.listFile);
+            writeln(e);
+            return 1;
         }
         catch (Exception e)
         {
