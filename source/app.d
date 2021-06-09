@@ -27,7 +27,7 @@ struct Configuration
     uint retriesPerFile = 100;
 
     ///
-    uint minFileSizeThershold = 400;
+    uint minFileSizeThreshold = 400;
 
     ///
     string targetDirectory = "images";
@@ -43,6 +43,9 @@ struct Configuration
 
     ///
     uint numberToDownload = uint.max;
+
+    ///
+    bool dryRun;
 }
 
 
@@ -81,8 +84,11 @@ void main(string[] args)
             "Download attempt read timeout.",
             &config.requestTimeoutSeconds,
         "min",
-            "Minimum file size to accept as a successful download.",
-            &config.minFileSizeThershold,
+            "Minimum file size to accept as a successful download (in bytes).",
+            &config.minFileSizeThreshold,
+        "dry-run",
+            "Download nothing, only echo what would be done.",
+            &config.dryRun,
     );
 
     writeln(config);
@@ -188,7 +194,7 @@ void downloadAllImages(const Configuration config, const Appender!(RemoteImage[]
 
             try
             {
-                if ((i != 0) && ((i != (images.data.length+(-1))) || (i == 1)))
+                if (!config.dryRun && (i != 0) && ((i != (images.data.length+(-1))) || (i == 1)))
                 {
                     import core.thread : Thread;
                     Thread.sleep(delayBetweenImages);
@@ -201,8 +207,8 @@ void downloadAllImages(const Configuration config, const Appender!(RemoteImage[]
                     stdout.flush();
                 }
 
-                immutable success = downloadImage(image.url, image.localPath,
-                    requestTimeout, config.minFileSizeThershold);
+                immutable success = config.dryRun || downloadImage(image.url,
+                    image.localPath, requestTimeout, config.minFileSizeThreshold);
 
                 if (success)
                 {
