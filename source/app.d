@@ -264,11 +264,8 @@ int main(string[] args)
     Params:
         images = The list of images to download.
         config = The current program [Configuration].
-
-    Returns:
-        `true` if downloading was uneventful, `false` if there was an exception.
  +/
-bool downloadAllImages(const Appender!(RemoteImage[]) images, const Configuration config)
+void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuration config)
 {
     import core.time : seconds;
 
@@ -324,13 +321,9 @@ bool downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
                 writeln();
                 writefln("EXCEPTION CAUGHT! index %d retry %d", i, retry);
                 writeln(e);
-                writeln();
-                return false;
             }
         }
     }
-
-    return true;
 }
 
 
