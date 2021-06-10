@@ -179,7 +179,7 @@ int main(string[] args)
     {
         if (!ensureImageDirectory(config))
         {
-            writeln(`"%s" is not a directory; remove it and try again.`);
+            writefln(`"%s" is not a directory; remove it and try again.`, config.targetDirectory);
             return 1;
         }
     }
