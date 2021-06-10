@@ -325,7 +325,7 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
             catch (Exception e)
             {
                 writeln();
-                writefln("EXCEPTION CAUGHT! index %d retry %d", i, retry);
+                writefln("EXCEPTION CAUGHT! image number %d", image.number);
                 writeln(e);
             }
         }
