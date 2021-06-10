@@ -129,7 +129,7 @@ int main(string[] args)
     if (results.helpWanted)
     {
         import std.path : baseName;
-        writefln("usage: %s [options] [json file (target.json)]", args[0].baseName);
+        writefln("usage: %s [options] [json file]", args[0].baseName);
         defaultGetoptPrinter(string.init, results.options);
         return 0;
     }
