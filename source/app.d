@@ -270,7 +270,7 @@ int main(string[] args)
 
     if (numExistingImages > 0)
     {
-        writefln("(skipping %d images already in directory.)", numExistingImages);
+        writefln("(skipping %d image(s) already in directory.)", numExistingImages);
     }
 
     writefln("total images: %s -- this will take a MINIMUM of %s.",
