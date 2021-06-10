@@ -206,7 +206,7 @@ int main(string[] args)
         .take(min(config.numberToDownload, numImages))
         .enumerate;
 
-    bool hasOutputDots;
+    bool hasOutputProgress;
 
     foreach (immutable i, imageJSON; range)
     {
@@ -234,30 +234,33 @@ int main(string[] args)
             auto existingFile = File(localPath, "r");
             ubyte[maxImageEndingMarkerLength] buf;
 
-            if (!hasOutputDots)
+            if (!hasOutputProgress)
             {
+                hasOutputProgress = true;  // well, below
                 write("verifying existing images ");
-                //stdout.flush();  // done below
             }
 
-            write('.');
-            hasOutputDots = true;
-            stdout.flush();
+            scope(exit) stdout.flush();
 
             existingFile.seek(seekPos);
             auto existingFileEnding = existingFile.rawRead(buf);
 
             if (hasValidJPEGEnding(existingFileEnding) || hasValidPNGEnding(existingFileEnding))
             {
+                write('.');
                 ++numExistingImages;
                 continue;
+            }
+            else
+            {
+                write('!');
             }
         }
 
         images ~= RemoteImage(url, localPath, i);
     }
 
-    if (hasOutputDots) writeln();
+    if (hasOutputProgress) writeln();
 
     if (!images.data.length)
     {
