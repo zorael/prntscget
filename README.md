@@ -26,7 +26,6 @@ usage: prntscget [options] [json file]
 -r --retries How many times to retry downloading an image.
      --delay Delay between image downloads, in seconds.
    --timeout Download attempt read timeout, in seconds.
-       --min Minimum file size to accept as a successful download (in bytes).
    --dry-run Download nothing, only echo what would be done.
 ```
 
