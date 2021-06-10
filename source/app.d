@@ -413,6 +413,7 @@ auto getImageList(const string cookie)
 
     enum url = "https://api.prntscr.com/v1/";
     enum post = `{"jsonrpc":"2.0","method":"get_user_screens","id":1,"params":{"count":10000}}`;
+    enum webform = "application/x-www-form-urlencoded";
 
     immutable headers =
     [
@@ -436,6 +437,6 @@ auto getImageList(const string cookie)
     req.timeout = 60.seconds;
     req.keepAlive = false;
     req.addHeaders(headers);
-    auto res = req.post(url, post, "application/x-www-form-urlencoded");
+    auto res = req.post(url, post, webform);
     return res.responseBody.data;
 }
