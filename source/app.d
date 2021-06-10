@@ -279,7 +279,7 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
 
         foreach (immutable retry; 0..config.retriesPerFile)
         {
-            import requests : TimeoutException;
+            import requests : RequestException, TimeoutException;
 
             try
             {
@@ -313,6 +313,12 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
             catch (TimeoutException e)
             {
                 // Retry
+                write('.');
+                stdout.flush();
+            }
+            catch (RequestException e)
+            {
+                // Unexpected network error; retry
                 write('.');
                 stdout.flush();
             }
