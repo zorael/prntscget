@@ -49,9 +49,6 @@ struct Configuration
     /// How many times to retry downloading a file before proceeding with the next one.
     uint retriesPerFile = 100;
 
-    /// The minimum image size in bytes to consider as a successful download.
-    uint minFileSizeThreshold = 400;
-
     /// Directory to save images to.
     string targetDirectory = "images";
 
@@ -118,9 +115,6 @@ int main(string[] args)
         "timeout",
             "Download attempt read timeout, in seconds.",
             &config.requestTimeoutSeconds,
-        "min",
-            "Minimum file size to accept as a successful download (in bytes).",
-            &config.minFileSizeThreshold,
         "dry-run",
             "Download nothing, only echo what would be done.",
             &config.dryRun,
