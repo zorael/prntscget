@@ -225,7 +225,7 @@ int main(string[] args)
         {
             import std.algorithm.comparison : max;
             import std.file : getSize;
-            import std.stdio : stdout, write;
+            import std.stdio : File, stdout, write;
 
             enum maxImageEndingMarkerLength = 12;  // JPEG 2, PNG 12
 
