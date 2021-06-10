@@ -212,28 +212,58 @@ int main(string[] args)
         .take(min(config.numberToDownload, numImages))
         .enumerate;
 
+    bool hasOutputDots;
+
     foreach (immutable i, imageJSON; range)
     {
         import std.array : replace, replaceFirst;
-        import std.file : exists, getSize;
+        import std.file : exists;
         import std.path : buildPath, extension;
 
         immutable url = imageJSON["url"].str;
         immutable filename = imageJSON["date"].str
-                .replace(" ", "_")
-                .replaceFirst(":", "h")
-                .replaceFirst(":", "m") ~ url.extension;
+            .replace(" ", "_")
+            .replaceFirst(":", "h")
+            .replaceFirst(":", "m") ~ url.extension;
         immutable localPath = buildPath(config.targetDirectory, filename);
 
-        if (!localPath.exists || (getSize(localPath) < config.minFileSizeThreshold))
+        if (localPath.exists)
         {
-            images ~= RemoteImage(url, localPath, i);
+            import std.algorithm.comparison : max;
+            import std.file : getSize;
+            import std.stdio : stdout, write;
+
+            enum maxImageEndingMarkerLength = 12;  // JPEG 2, PNG 12
+
+            immutable localPathSize = getSize(localPath);
+            immutable seekPos = max(localPathSize-maxImageEndingMarkerLength, 0);
+            auto existingFile = File(localPath, "r");
+            ubyte[maxImageEndingMarkerLength] buf;
+
+            if (!hasOutputDots)
+            {
+                write("verifying existing images ");
+                //stdout.flush();  // done below
+            }
+
+            write('.');
+            hasOutputDots = true;
+            stdout.flush();
+
+            existingFile.seek(seekPos);
+            auto existingFileEnding = existingFile.rawRead(buf);
+
+            if (hasValidJPEGEnding(existingFileEnding) || hasValidPNGEnding(existingFileEnding))
+            {
+                ++numExistingImages;
+                continue;
+            }
         }
-        else
-        {
-            ++numExistingImages;
-        }
+
+        images ~= RemoteImage(url, localPath, i);
     }
+
+    if (hasOutputDots) writeln();
 
     if (!images.data.length)
     {
@@ -296,8 +326,8 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
                     stdout.flush();
                 }
 
-                immutable success = config.dryRun || downloadImage(image.url,
-                    image.localPath, requestTimeout, config.minFileSizeThreshold);
+                immutable success = config.dryRun ||
+                    downloadImage(image.url, image.localPath, requestTimeout);
 
                 if (success)
                 {
@@ -345,26 +375,56 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
         `true` if a file was successfully downloaded (including passing the
         size check); `false` if not.
  +/
-bool downloadImage(const string url, const string imagePath,
-    const Duration requestTimeout, const uint minFileSizeThreshold)
+bool downloadImage(const string url, const string imagePath, const Duration requestTimeout)
 {
     import requests : Request;
+    import std.stdio : File;
 
     Request req;
     req.timeout = requestTimeout;
     req.keepAlive = false;
     auto res = req.get(url);
 
-    // Confirm size so we didn't download a 366-byte 505 info page
-    if ((res.code == 200) && (res.responseBody.length > minFileSizeThreshold))
+    if (res.code != 200) return false;
+
+    if (!hasValidPNGEnding(res.responseBody.data) && !hasValidJPEGEnding(res.responseBody.data))
     {
-        import std.stdio : File;
-        auto file = File(imagePath, "w");
-        file.rawWrite(res.responseBody.data);
-        return true;
+        // Interrupted download?
+        return false;
     }
 
-    return false;
+    File(imagePath, "w").rawWrite(res.responseBody.data);
+    return true;
+}
+
+
+/++
+    Detects whether a passed array of bytes has a valid JPEG ending.
+
+    Params:
+        fileContents = Contents of a (possibly) JPEG file.
+ +/
+bool hasValidJPEGEnding(const ubyte[] fileContents)
+{
+    import std.algorithm.searching : endsWith;
+
+    static immutable eoi = [ 0xFF, 0xD9 ];
+    return fileContents.endsWith(eoi);
+}
+
+
+/++
+    Detects whether a passed array of bytes has a valid PNG ending.
+
+    Params:
+        fileContents = Contents of a (possibly) PNG file.
+ +/
+bool hasValidPNGEnding(const ubyte[] fileContents)
+{
+    import std.algorithm.searching : endsWith;
+
+    static immutable iend = [ 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82 ];
+    return fileContents.endsWith(iend);
 }
 
 
