@@ -62,7 +62,7 @@ struct Configuration
     uint startingImagePosition;
 
     /// How many images to download.
-    uint numberToDownload = uint.max;
+    uint numToDownload = uint.max;
 
     /// Whether or not this is a dry run.
     bool dryRun;
@@ -105,7 +105,7 @@ int main(string[] args)
             &config.startingImagePosition,
         "n|num",
             "Number of images to download.",
-            &config.numberToDownload,
+            &config.numToDownload,
         "r|retries",
             "How many times to retry downloading an image.",
             &config.retriesPerFile,
@@ -209,7 +209,7 @@ int main(string[] args)
         .array
         .retro
         .drop(config.startingImagePosition)
-        .take(min(config.numberToDownload, numImages))
+        .take(min(config.numToDownload, numImages))
         .enumerate;
 
     bool hasOutputProgress;
