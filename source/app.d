@@ -128,6 +128,12 @@ int main(string[] args)
         return 0;
     }
 
+    if (args.length > 1)
+    {
+        config.listFile = args[1];
+        //args = args[1..$];
+    }
+
     if (specifiedCookie.length)
     {
         import std.algorithm.searching : canFind;
