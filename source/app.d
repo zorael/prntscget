@@ -84,7 +84,7 @@ int main(string[] args)
     import std.array : Appender;
     import std.file : exists, readText;
     import std.getopt : defaultGetoptPrinter, getopt, getoptConfig = config;
-    import std.json : JSONException, parseJSON;
+    import std.json : parseJSON;
     import std.range : drop, enumerate, retro, take;
     import core.time : seconds;
 
@@ -136,23 +136,24 @@ int main(string[] args)
 
     if (specifiedCookie.length)
     {
-        import std.algorithm.searching : canFind;
-
-        writefln(`fetching image list JSON and saving into "%s"...`, config.listFile);
-        const listFileContents = getImageList(specifiedCookie);
-
-        if (!listFileContents.canFind(`"result":{"success":true,`))
-        {
-            writeln("failed to fetch image list. incorrect cookie?");
-            return 1;
-        }
-
-        immutable imageListJSON = parseJSON(cast(string)listFileContents);
-        writefln("%d image(s) found.", imageListJSON["result"]["total"].integer);
+        import std.json : JSONException;
 
         try
         {
+            import std.algorithm.searching : canFind;
             import std.stdio : File;
+
+            writefln(`fetching image list JSON and saving into "%s"...`, config.listFile);
+            const listFileContents = getImageList(specifiedCookie);
+
+            if (!listFileContents.canFind(`"result":{"success":true,`))
+            {
+                writeln("failed to fetch image list. incorrect cookie?");
+                return 1;
+            }
+
+            immutable imageListJSON = parseJSON(cast(string)listFileContents);
+            writefln("%d images found.", imageListJSON["result"]["total"].integer);
             File(config.listFile, "w").writeln(imageListJSON.toPrettyString);
         }
         catch (JSONException e)
