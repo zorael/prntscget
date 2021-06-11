@@ -1,16 +1,22 @@
 # `prnt.sc` get
 
-This command-line program downloads your Lightshot ([`prnt.sc`](https://prnt.scr)) gallery and saves it to disk. It is very slow by default so as to be dead certain not to trigger rate-limiting measures; it's meant to be run over a period of hours or even days. The delays between images can be specified when running the program (default values are naturally subject to tweaking).
+This command-line program downloads your Lightshot ([`prnt.sc`](https://prnt.scr)) gallery and saves it to disk. It is very slow by default so as to be dead certain not to trigger rate-limiting measures; it's meant to be run over a period of hours or even days. The delays between images can be specified when running the program (default values are naturally subject to tweaking). An interrupted run will be resumed on next execution.
 
 Heavily inspired by [Wipie/LightShotGalleryDownloader-CLI](https://github.com/Wipie/LightShotGalleryDownloader-CLI).
 
-## How to build
+## How to get
 
-You need a [**D**](https://dlang.org) compiler and the official package manager `dub`. On Windows it comes bundled in the compiler archive, while on Linux it may have to be installed separately. Refer to your repositories.
+Either download a binary from the [Releases](https://github.com/zorael/prntscget/releases) page, or clone the source and build it yourself.
 
 ```sh
 $ git clone https://github.com/zorael/prntscget.git
-$ cd prntscget
+```
+
+## How to build
+
+You need a [**D**](https://dlang.org) compiler and the official `dub` package manager. On Windows it comes bundled in the compiler archive, while on Linux it may have to be installed separately. Refer to your repositories.
+
+```sh
 $ dub build
 ```
 
@@ -29,7 +35,7 @@ usage: prntscget [options] [json file]
    --dry-run Download nothing, only echo what would be done.
 ```
 
-## Gallery access cookie
+### Gallery access cookie
 
 To have the program gain access to your gallery, you need to extract the value of the `__auth` cookie that your browser sets when logging into the page, and pass it to the program.
 
