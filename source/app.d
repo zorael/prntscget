@@ -158,13 +158,13 @@ int main(string[] args)
         }
         catch (JSONException e)
         {
-            writefln(`FAILED TO PARSE LIST FILE "%s"`, config.listFile);
+            writeln("failed to parse JSON fetched from server");
             writeln(e);
             return 1;
         }
         catch (Exception e)
         {
-            writefln(`FAILED TO WRITE LIST FILE "%s"`, config.listFile);
+            writeln("failed to fetch list or write it to disk");
             writeln(e);
             return 1;
         }
@@ -186,7 +186,7 @@ int main(string[] args)
     }
     catch (Exception e)
     {
-        writefln(`FAILED TO ENSURE TARGET IMAGE DIRECTORY "%s"`, config.targetDirectory);
+        writefln(`failed to ensure target directory "%s"`, config.targetDirectory);
         writeln(e);
         return 1;
     }
