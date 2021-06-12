@@ -216,7 +216,7 @@ int run(string[] args)
     }
 
     writefln("total images: %s -- this will take a MINIMUM of %s.",
-        images.data.length, images.data.length*config.delayBetweenImagesSeconds.seconds);
+        images.data.length, (images.data.length+(-1))*config.delayBetweenImagesSeconds.seconds);
 
     downloadAllImages(images, config);
 
