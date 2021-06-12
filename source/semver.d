@@ -11,7 +11,7 @@ module prntscget.semver;
 enum PrntscgetSemVer
 {
     majorVersion = 0,  /// SemVer major version of the program.
-    minorVersion = 0,  /// SemVer minor version of the program.
+    minorVersion = 1,  /// SemVer minor version of the program.
     patchVersion = 0,  /// SemVer patch version of the program.
 }
 
