@@ -165,7 +165,7 @@ int run(string[] args)
 
     if (!ensureImageDirectory(config.targetDirectory))
     {
-        writefln(`"%s" is not a directory; remove it and try again.`, config.targetDirectory);
+        writefln(`"%s" is not a directory.`, config.targetDirectory);
         return 1;
     }
 
