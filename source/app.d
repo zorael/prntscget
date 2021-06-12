@@ -3,7 +3,7 @@
 
     See_Also: https://app.prntscr.com/en/index.html
  +/
-module prntscget;
+module prntscget.app;
 
 private:
 
