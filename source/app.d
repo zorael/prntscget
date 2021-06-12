@@ -10,7 +10,6 @@ private:
 import std.array : Appender;
 import std.getopt : GetoptResult;
 import std.json : JSONValue;
-import std.stdio : writefln, writeln;
 import core.time : Duration;
 
 public:
@@ -93,6 +92,7 @@ int main(string[] args)
     }
     catch (Exception e)
     {
+        import std.stdio : writeln;
         writeln("exception thrown: ", e.msg);
         return 1;
     }
@@ -112,6 +112,7 @@ int run(string[] args)
 {
     import std.file : exists, readText;
     import std.json : parseJSON;
+    import std.stdio : writefln, writeln;
     import core.time : seconds;
 
     Configuration config;
@@ -359,6 +360,7 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
         foreach (immutable retry; 0..config.retriesPerFile)
         {
             import requests : RequestException, TimeoutException;
+            import std.stdio : writeln;
 
             try
             {
