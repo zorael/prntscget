@@ -99,6 +99,8 @@ int main(string[] args)
         writeln("exception thrown: ", e.msg);
         return 1;
     }
+
+    assert(0);
 }
 
 
