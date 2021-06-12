@@ -8,6 +8,8 @@ module prntscget;
 private:
 
 import std.array : Appender;
+import std.getopt : GetoptResult;
+import std.json : JSONValue;
 import std.stdio : writefln, writeln;
 import core.time : Duration;
 
@@ -64,6 +66,9 @@ struct Configuration
     /// How many images to download.
     uint numToDownload = uint.max;
 
+    /// Cookie specified at the command line.
+    string specifiedCookie;
+
     /// Whether or not this is a dry run.
     bool dryRun;
 }
@@ -71,6 +76,8 @@ struct Configuration
 
 /++
     Program entry point.
+
+    Merely passes execution to [run], wrapped in a try-catch.
 
     Params:
         args = Arguments passed at the command line.
@@ -80,23 +87,139 @@ struct Configuration
  +/
 int main(string[] args)
 {
-    import std.algorithm.comparison : min;
-    import std.array : Appender;
+    try
+    {
+        return run(args);
+    }
+    catch (Exception e)
+    {
+        writeln("exception thrown: ", e.msg);
+        return 1;
+    }
+}
+
+
+/++
+    Program main logic.
+
+    Params:
+        args = Arguments passed at the command line.
+
+    Returns:
+        zero on success, non-zero on errors.
+ +/
+int run(string[] args)
+{
     import std.file : exists, readText;
-    import std.getopt : defaultGetoptPrinter, getopt, getoptConfig = config;
     import std.json : parseJSON;
-    import std.range : drop, enumerate, retro, take;
     import core.time : seconds;
 
     Configuration config;
-    string specifiedCookie;
 
-    auto results = getopt(args,
+    auto results = handleGetopt(args, config);
+
+    if (results.helpWanted)
+    {
+        import std.getopt : defaultGetoptPrinter;
+        import std.path : baseName;
+
+        writefln("usage: %s [options] [json file]", args[0].baseName);
+        defaultGetoptPrinter(string.init, results.options);
+        return 0;
+    }
+
+    if (args.length > 1)
+    {
+        config.listFile = args[1];
+        //args = args[1..$];
+    }
+
+    if (config.specifiedCookie.length)
+    {
+        import std.algorithm.searching : canFind;
+        import std.stdio : File;
+
+        writefln(`fetching image list JSON and saving into "%s"...`, config.listFile);
+        const listFileContents = getImageList(config.specifiedCookie);
+
+        if (!listFileContents.canFind(`"result":{"success":true,`))
+        {
+            writeln("failed to fetch image list. incorrect cookie?");
+            return 1;
+        }
+
+        immutable imageListJSON = parseJSON(cast(string)listFileContents);
+        writefln("%d images found.", imageListJSON["result"]["total"].integer);
+        File(config.listFile, "w").writeln(imageListJSON.toPrettyString);
+    }
+
+    if (!config.listFile.exists)
+    {
+        writefln(`image list JSON file "%s" does not exist.`, config.listFile);
+        return 1;
+    }
+
+    if (!ensureImageDirectory(config.targetDirectory))
+    {
+        writefln(`"%s" is not a directory; remove it and try again.`, config.targetDirectory);
+        return 1;
+    }
+
+    auto listJSON = config.listFile
+        .readText
+        .parseJSON;
+    immutable numImages = listJSON["result"]["total"].integer;
+
+    if (!numImages)
+    {
+        writeln("no images to fetch.");
+        return 0;
+    }
+
+    Appender!(RemoteImage[]) images;
+    images.reserve(numImages);
+    immutable numExistingImages = enumerateImages(images, listJSON, config, numImages);
+
+    if (!images.data.length)
+    {
+        writefln("no images to fetch -- all %d are already downloaded.", numImages);
+        return 0;
+    }
+
+    if (numExistingImages > 0)
+    {
+        writefln("(skipping %d image(s) already in directory.)", numExistingImages);
+    }
+
+    writefln("total images: %s -- this will take a MINIMUM of %s.",
+        images.data.length, images.data.length*config.delayBetweenImagesSeconds.seconds);
+
+    downloadAllImages(images, config);
+
+    writeln("done.");
+    return 0;
+}
+
+
+/++
+    Handles getopt arguments passed to the program.
+
+    Params:
+        args = Command-line arguments passed to the program.
+        config = [Configuration] struct to set the members of.
+
+    Returns:
+        [std.getopt.GetoptResult] as returned by the call to [std.getopt.getopt].
+ +/
+GetoptResult handleGetopt(string[] args, out Configuration config)
+{
+    import std.getopt : getopt, getoptConfig = config;
+
+    return getopt(args,
         getoptConfig.caseSensitive,
-        getoptConfig.passThrough,
         "c|cookie",
             "Cookie to download gallery of (see README).",
-            &specifiedCookie,
+            &config.specifiedCookie,
         "d|dir",
             "Target image directory.",
             &config.targetDirectory,
@@ -119,92 +242,36 @@ int main(string[] args)
             "Download nothing, only echo what would be done.",
             &config.dryRun,
     );
+}
 
-    if (results.helpWanted)
-    {
-        import std.path : baseName;
-        writefln("usage: %s [options] [json file]", args[0].baseName);
-        defaultGetoptPrinter(string.init, results.options);
-        return 0;
-    }
 
-    if (args.length > 1)
-    {
-        config.listFile = args[1];
-        //args = args[1..$];
-    }
+/++
+    Enumerate images, skipping existing ones.
 
-    if (specifiedCookie.length)
-    {
-        import std.json : JSONException;
+    Params:
+        images = [std.array.Appender] containing references to all images to download.
+        listJSON = JSON list of images to download.
+        config = The current [Configuration] of all getopt values aggregated.
+        numImages = The number of images to download, when specified as a lower
+            number than the max by getopt.
 
-        try
-        {
-            import std.algorithm.searching : canFind;
-            import std.stdio : File;
+    Returns:
+        The number of images that should be downloaded.
+ +/
+uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJSON,
+    const Configuration config, const size_t numImages)
+{
+    import std.algorithm.comparison : min;
+    import std.range : drop, enumerate, retro, take;
 
-            writefln(`fetching image list JSON and saving into "%s"...`, config.listFile);
-            const listFileContents = getImageList(specifiedCookie);
-
-            if (!listFileContents.canFind(`"result":{"success":true,`))
-            {
-                writeln("failed to fetch image list. incorrect cookie?");
-                return 1;
-            }
-
-            immutable imageListJSON = parseJSON(cast(string)listFileContents);
-            writefln("%d images found.", imageListJSON["result"]["total"].integer);
-            File(config.listFile, "w").writeln(imageListJSON.toPrettyString);
-        }
-        catch (JSONException e)
-        {
-            writeln("failed to parse JSON fetched from server");
-            writeln(e);
-            return 1;
-        }
-        catch (Exception e)
-        {
-            writeln("failed to fetch list or write it to disk");
-            writeln(e);
-            return 1;
-        }
-    }
-
-    if (!config.listFile.exists)
-    {
-        writefln(`image list JSON file "%s" does not exist.`, config.listFile);
-        return 1;
-    }
-
-    try
-    {
-        if (!ensureImageDirectory(config))
-        {
-            writefln(`"%s" is not a directory; remove it and try again.`, config.targetDirectory);
-            return 1;
-        }
-    }
-    catch (Exception e)
-    {
-        writefln(`failed to ensure target directory "%s"`, config.targetDirectory);
-        writeln(e);
-        return 1;
-    }
-
-    auto listJSON = config.listFile
-        .readText
-        .parseJSON;
-    immutable numImages = listJSON["result"]["total"].integer;
-
-    if (!numImages)
-    {
-        writeln("no images to fetch.");
-        return 0;
-    }
-
-    Appender!(RemoteImage[]) images;
-    images.reserve(numImages);
     uint numExistingImages;
+    bool needsLinebreak;
+
+    scope(exit)
+    {
+        import std.stdio : writeln;
+        if (needsLinebreak) writeln();
+    }
 
     auto range = listJSON["result"]["screens"]
         .array
@@ -212,8 +279,6 @@ int main(string[] args)
         .drop(config.startingImagePosition)
         .take(min(config.numToDownload, numImages))
         .enumerate;
-
-    bool hasOutputProgress;
 
     foreach (immutable i, imageJSON; range)
     {
@@ -241,9 +306,9 @@ int main(string[] args)
             auto existingFile = File(localPath, "r");
             ubyte[maxImageEndingMarkerLength] buf;
 
-            if (!hasOutputProgress)
+            if (!needsLinebreak)
             {
-                hasOutputProgress = true;  // well, below
+                needsLinebreak = true;  // well, below
                 write("verifying existing images ");
             }
 
@@ -267,28 +332,8 @@ int main(string[] args)
         images ~= RemoteImage(url, localPath, i);
     }
 
-    if (hasOutputProgress) writeln();
-
-    if (!images.data.length)
-    {
-        writefln("no images to fetch -- all %d are already downloaded.", numImages);
-        return 0;
-    }
-
-    if (numExistingImages > 0)
-    {
-        writefln("(skipping %d image(s) already in directory.)", numExistingImages);
-    }
-
-    writefln("total images: %s -- this will take a MINIMUM of %s.",
-        images.data.length, images.data.length*config.delayBetweenImagesSeconds.seconds);
-
-    downloadAllImages(images, config);
-
-    writeln("done.");
-    return 0;
+    return numExistingImages;
 }
-
 
 /++
     Downloads all images in the passed `images` list.
@@ -359,7 +404,7 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
             catch (Exception e)
             {
                 writeln();
-                writeln(e);
+                writeln(e.msg);
             }
         }
     }
@@ -436,22 +481,22 @@ bool hasValidPNGEnding(const ubyte[] fileContents)
     returning false if it fails to.
 
     Params:
-        config = The current [Configuration].
+        targetDirectory = Target directory to ensure existence of.
 
     Returns:
         `true` if the directory already exists or if it was succesfully created;
         `false` if it could not be.
  +/
-bool ensureImageDirectory(const Configuration config)
+bool ensureImageDirectory(const string targetDirectory)
 {
     import std.file : exists, isDir, mkdir;
 
-    if (!config.targetDirectory.exists)
+    if (!targetDirectory.exists)
     {
-        mkdir(config.targetDirectory);
+        mkdir(targetDirectory);
         return true;
     }
-    else if (!config.targetDirectory.isDir)
+    else if (!targetDirectory.isDir)
     {
         return false;
     }
