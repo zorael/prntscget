@@ -126,11 +126,22 @@ int run(string[] args)
 
     if (results.helpWanted)
     {
+        import prntscget.semver : PrntscgetSemVer, PrntscgetSemVerPrerelease;
+        import std.format : format;
         import std.getopt : defaultGetoptPrinter;
         import std.path : baseName;
 
-        writefln("usage: %s [options] [json file]", args[0].baseName);
-        defaultGetoptPrinter(string.init, results.options);
+        enum banner = "prntscget v%d.%d.%d%s, built on %s".format(
+            PrntscgetSemVer.majorVersion,
+            PrntscgetSemVer.minorVersion,
+            PrntscgetSemVer.patchVersion,
+            PrntscgetSemVerPrerelease,
+            __TIMESTAMP__);
+
+        writeln(banner);
+
+        immutable usageLine = "\nusage: %s [options] [json file]\n".format(args[0].baseName);
+        defaultGetoptPrinter(usageLine, results.options);
         return 0;
     }
 
