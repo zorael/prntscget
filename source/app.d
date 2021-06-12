@@ -378,12 +378,10 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
     imageloop:
     foreach (immutable i, const image; images)
     {
-        import std.stdio : stdout, write;
-
         foreach (immutable retry; 0..config.retriesPerFile)
         {
             import requests : RequestException, TimeoutException;
-            import std.stdio : writeln;
+            import std.stdio : stdout, write, writeln;
 
             try
             {
