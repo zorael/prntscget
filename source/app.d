@@ -1,7 +1,7 @@
 /++
     Lightshot `prnt.sc` (and `prntscr.com`) gallery downloader.
 
-    https://app.prntscr.com/en/index.html
+    See_Also: https://app.prntscr.com/en/index.html
  +/
 module prntscget;
 
@@ -40,32 +40,35 @@ struct RemoteImage
 
 
 /++
-    Aggregate of values supplied at the command-line.
+    Aggregate of values supplied at the command line.
  +/
 struct Configuration
 {
     /// File to save the JSON list of images to.
     string listFile = "target.json";
 
-    /// How many times to retry downloading a file before proceeding with the next one.
+    /++
+     +  How many times to try downloading a file before admitting failure and
+     +  proceeding with the next one.
+     +/
     uint retriesPerFile = 100;
 
     /// Directory to save images to.
     string targetDirectory = "images";
 
-    /// Reques timeout when downloading an image.
+    /// Request timeout when downloading an image.
     uint requestTimeoutSeconds = 60;
 
-    /// How many seconds to wait inbetween image downloads.
+    /// How many seconds to wait between image downloads.
     uint delayBetweenImagesSeconds = 60;
 
-    /// The number of images to skip when downloading (the starting position).
+    /// The number of images to skip when downloading (the index starting position).
     uint startingImagePosition;
 
     /// How many images to download.
     uint numToDownload = uint.max;
 
-    /// Cookie specified at the command line.
+    /// `__auth` Cookie string specified at the command line.
     string specifiedCookie;
 
     /// Whether or not this is a dry run.
