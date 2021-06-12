@@ -151,6 +151,9 @@ int run(string[] args)
         //args = args[1..$];
     }
 
+    /// JSON image list, fetched from the server
+    JSONValue listJSON;
+
     if (config.specifiedCookie.length)
     {
         import std.algorithm.searching : canFind;
@@ -165,12 +168,11 @@ int run(string[] args)
             return 1;
         }
 
-        immutable imageListJSON = parseJSON(cast(string)listFileContents);
-        writefln("%d images found.", imageListJSON["result"]["total"].integer);
-        File(config.listFile, "w").writeln(imageListJSON.toPrettyString);
+        listJSON = parseJSON(cast(string)listFileContents);
+        writefln("%d images found.", listJSON["result"]["total"].integer);
+        File(config.listFile, "w").writeln(listJSON.toPrettyString);
     }
-
-    if (!config.listFile.exists)
+    else if (!config.listFile.exists)
     {
         writefln(`image list JSON file "%s" does not exist.`, config.listFile);
         return 1;
@@ -182,9 +184,14 @@ int run(string[] args)
         return 1;
     }
 
-    auto listJSON = config.listFile
-        .readText
-        .parseJSON;
+    if (listJSON == JSONValue.init)  // (listJSON.type == JSONType.null_)
+    {
+        // A cookie was not supplied and the list JSON was never read
+        listJSON = config.listFile
+            .readText
+            .parseJSON;
+    }
+
     immutable numImages = listJSON["result"]["total"].integer;
 
     if (!numImages)
