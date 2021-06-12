@@ -169,7 +169,8 @@ int run(string[] args)
         }
 
         listJSON = parseJSON(cast(string)listFileContents);
-        writefln("%d images found.", listJSON["result"]["total"].integer);
+        immutable total = listJSON["result"]["total"].integer;
+        writefln("%d %s found.", total, total.plurality("image", "images"));
         if (!config.dryRun) File(config.listFile, "w").writeln(listJSON.toPrettyString);
     }
     else if (!config.listFile.exists)
@@ -212,7 +213,8 @@ int run(string[] args)
 
     if (numExistingImages > 0)
     {
-        writefln("(skipping %d image(s) already in directory.)", numExistingImages);
+        writefln("(skipping %d %s already in directory.)", numExistingImages,
+            numExistingImages.plurality("image", "images"));
     }
 
     writefln("total images: %s -- this will take a MINIMUM of %s.",
