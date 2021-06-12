@@ -170,7 +170,7 @@ int run(string[] args)
 
         listJSON = parseJSON(cast(string)listFileContents);
         writefln("%d images found.", listJSON["result"]["total"].integer);
-        File(config.listFile, "w").writeln(listJSON.toPrettyString);
+        if (!config.dryRun) File(config.listFile, "w").writeln(listJSON.toPrettyString);
     }
     else if (!config.listFile.exists)
     {
