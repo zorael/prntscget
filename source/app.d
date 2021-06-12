@@ -192,7 +192,7 @@ int run(string[] args)
             .parseJSON;
     }
 
-    immutable numImages = listJSON["result"]["total"].integer;
+    immutable numImages = cast(size_t)listJSON["result"]["total"].integer;
 
     if (!numImages)
     {
