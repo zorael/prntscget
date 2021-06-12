@@ -571,3 +571,20 @@ auto getImageList(const string cookie)
     auto res = req.post(url, post, webform);
     return res.responseBody.data;
 }
+
+
+/++
+    Chooses between two values based on if the passed numeric value is one or many.
+
+    Params:
+        num = Number of items.
+        singular = Singular value.
+        plural = Plural value.
+
+    Returns:
+        Either the singular or the plural form, based on the value of `num`.
+ +/
+T plurality(T, N)(N num, T singular, T plural)
+{
+    return ((num == 1) || (num == -1)) ? singular : plural;
+}
