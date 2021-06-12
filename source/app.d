@@ -212,7 +212,7 @@ int run(string[] args)
     Returns:
         [std.getopt.GetoptResult] as returned by the call to [std.getopt.getopt].
  +/
-GetoptResult handleGetopt(string[] args, out Configuration config)
+GetoptResult handleGetopt(ref string[] args, out Configuration config)
 {
     import std.getopt : getopt, getoptConfig = config;
 
