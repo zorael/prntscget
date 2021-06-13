@@ -160,7 +160,7 @@ int run(string[] args)
         import std.stdio : File;
 
         writefln(`fetching image list JSON and saving into "%s"...`, config.listFile);
-        const listFileContents = getImageList(config.specifiedCookie);
+        const listFileContents = getImageList(config.specifiedCookie, config.requestTimeoutSeconds);
 
         if (!listFileContents.canFind(`"result":{"success":true,`))
         {
@@ -535,11 +535,12 @@ bool ensureImageDirectory(const string targetDirectory)
 
     Params:
         cookie = `__auth` cookie to fetch the gallery of.
+        requestTimeoutSeconds = Request timeout when downloading the list.
 
     Returns:
         A buffer struct containing the response body of the request.
  +/
-auto getImageList(const string cookie)
+auto getImageList(const string cookie, const uint requestTimeoutSeconds)
 {
     import requests : Request;
     import core.time : seconds;
@@ -567,7 +568,7 @@ auto getImageList(const string cookie)
     ];
 
     Request req;
-    req.timeout = 60.seconds;
+    req.timeout = requestTimeoutSeconds.seconds;
     req.keepAlive = false;
     req.addHeaders(headers);
     auto res = req.post(url, post, webform);
