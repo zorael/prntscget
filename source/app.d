@@ -207,18 +207,22 @@ int run(string[] args)
 
     if (!images.data.length)
     {
-        writefln("no images to fetch -- all %d are already downloaded.", numImages);
+        writefln("\nno images to fetch -- all %d are already downloaded.", numImages);
         return 0;
     }
 
     if (numExistingImages > 0)
     {
-        writefln("(skipping %d %s already in directory.)", numExistingImages,
+        writefln(" (skipping %d %s already in directory)", numExistingImages,
             numExistingImages.plurality("image", "images"));
     }
 
-    writefln("total images: %s -- this will take a MINIMUM of %s.",
-        images.data.length, (images.data.length+(-1))*config.delayBetweenImagesSeconds.seconds);
+    writefln("total images to download: %s -- this will take a MINIMUM of %s. " ~
+        "(waiting %d %s between images; use `--delay` to change)",
+        images.data.length,
+        (images.data.length+(-1))*config.delayBetweenImagesSeconds.seconds,
+        config.delayBetweenImagesSeconds,
+        config.delayBetweenImagesSeconds.plurality("second", "seconds"));
 
     downloadAllImages(images, config);
 
@@ -291,13 +295,7 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
     import std.range : drop, enumerate, retro, take;
 
     uint numExistingImages;
-    bool needsLinebreak;
-
-    scope(exit)
-    {
-        import std.stdio : writeln;
-        if (needsLinebreak) writeln();
-    }
+    bool outputPreamble;
 
     auto range = listJSON["result"]["screens"]
         .array
@@ -332,10 +330,10 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
             auto existingFile = File(localPath, "r");
             ubyte[maxImageEndingMarkerLength] buf;
 
-            if (!needsLinebreak)
+            if (!outputPreamble)
             {
-                needsLinebreak = true;  // well, below
                 write("verifying existing images ");
+                outputPreamble = true;
             }
 
             scope(exit) stdout.flush();
