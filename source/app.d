@@ -62,13 +62,13 @@ struct Configuration
     /// How many seconds to wait between image downloads.
     uint delayBetweenImagesSeconds = 60;
 
-    /// The number of images to skip when downloading (the index starting position).
+    /// The number of images to skip when downloading (e.g. the index starting position).
     uint startingImagePosition;
 
-    /// How many images to download.
+    /// How many images to download, ignoring duplicates.
     uint numToDownload = uint.max;
 
-    /// `__auth` Cookie string specified at the command line.
+    /// `__auth` cookie string specified at the command line.
     string specifiedCookie;
 
     /// Whether or not this is a dry run.
@@ -470,7 +470,7 @@ bool downloadImage(const string url, const string imagePath, const Duration requ
 
 
 /++
-    Detects whether a passed array of bytes has a valid JPEG ending.
+    Detects whether or not a passed array of bytes has a valid JPEG ending.
 
     Params:
         fileContents = Contents of a (possibly) JPEG file.
@@ -485,7 +485,7 @@ bool hasValidJPEGEnding(const ubyte[] fileContents)
 
 
 /++
-    Detects whether a passed array of bytes has a valid PNG ending.
+    Detects whether or not a passed array of bytes has a valid PNG ending.
 
     Params:
         fileContents = Contents of a (possibly) PNG file.
