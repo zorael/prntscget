@@ -1,6 +1,6 @@
 # `prnt.sc` get
 
-This command-line program downloads your Lightshot ([`prnt.sc`](https://prnt.scr)) gallery and saves it to disk. It is very slow by default so as to be dead certain not to trigger rate-limiting measures; it's meant to be run over a period of hours or even days. The delays between images can be specified when running the program (default values are naturally subject to tweaking). An interrupted run will be resumed on next execution.
+This command-line program downloads your Lightshot ([`prnt.sc`](https://prnt.scr)) gallery and saves it to disk. It is very slow by default so as to be dead certain not to trigger rate-limiting measures; it's meant to be run over a period of hours or even days. The delays between images [can be specified](#but-downloading-takes-ages) when running the program (default values are naturally subject to tweaking; feedback appreciated). An interrupted run will be resumed on next execution.
 
 Heavily inspired by [Wipie/LightShotGalleryDownloader-CLI](https://github.com/Wipie/LightShotGalleryDownloader-CLI).
 
@@ -30,8 +30,8 @@ usage: prntscget [options] [json file]
 -s   --start Starting image position.
 -n     --num Number of images to download.
 -r --retries How many times to retry downloading an image.
-     --delay Delay between image downloads, in seconds.
-   --timeout Download attempt read timeout, in seconds.
+-D   --delay Delay between image downloads, in seconds.
+-t --timeout Download attempt read timeout, in seconds.
    --dry-run Download nothing, only echo what would be done.
 ```
 
@@ -55,6 +55,16 @@ This fetches a list of 10,000 of your images and saves it to a file in the curre
 Subsequent executions of the program will reuse this file, so you only need to supply the cookie once, or whenever you want to update the list with new images.
 
 A `target.json` fetched for use with [Wipie/LightShotGalleryDownloader-CLI](https://github.com/Wipie/LightShotGalleryDownloader-CLI) can be used directly as-is.
+
+### But downloading takes ages
+
+By default it conservatively downloads one image *every 60 seconds*, which is probably overkill, but safe. To speed it up, pass a smaller number with the `--delay` flag.
+
+```sh
+$ prntscget --delay 10
+```
+
+Feedback appreciated; likely the default can be safely lowered.
 
 ## License
 
