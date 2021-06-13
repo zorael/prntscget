@@ -479,8 +479,8 @@ bool hasValidJPEGEnding(const ubyte[] fileContents)
 {
     import std.algorithm.searching : endsWith;
 
-    static immutable eoi = [ 0xFF, 0xD9 ];
-    return fileContents.endsWith(eoi);
+    static immutable ubyte[2] eoi = [ 0xFF, 0xD9 ];
+    return fileContents.endsWith(eoi[]);
 }
 
 
@@ -494,8 +494,8 @@ bool hasValidPNGEnding(const ubyte[] fileContents)
 {
     import std.algorithm.searching : endsWith;
 
-    static immutable iend = [ 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82 ];
-    return fileContents.endsWith(iend);
+    static immutable ubyte[12] iend = [ 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82 ];
+    return fileContents.endsWith(iend[]);
 }
 
 
