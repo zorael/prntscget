@@ -59,7 +59,7 @@ struct Configuration
     uint requestTimeoutSeconds = 60;
 
     /// How many seconds to wait between image downloads.
-    uint delayBetweenImagesSeconds = 60;
+    uint delayBetweenImagesSeconds = 5;
 
     /// The number of images to skip when downloading (e.g. the index starting position).
     uint startingImagePosition;
