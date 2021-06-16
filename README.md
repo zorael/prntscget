@@ -73,7 +73,6 @@ This project is licensed under the **MIT** license - see the [LICENSE](LICENSE) 
 ## Built with
 
 * [D](https://dlang.org)
-* [ikod/dlang-requests](https://github.com/ikod/dlang-requests) ([dub](https://code.dlang.org/packages/requests))
 
 ## Acknowledgements
 
