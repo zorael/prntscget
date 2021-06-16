@@ -8,7 +8,6 @@ module prntscget.app;
 private:
 
 import std.array : Appender;
-import std.getopt : GetoptResult;
 import std.json : JSONValue;
 import core.time : Duration;
 
@@ -241,7 +240,7 @@ int run(string[] args)
     Returns:
         [std.getopt.GetoptResult] as returned by the call to [std.getopt.getopt].
  +/
-GetoptResult handleGetopt(ref string[] args, out Configuration config)
+auto handleGetopt(ref string[] args, out Configuration config)
 {
     import std.getopt : getopt, getoptConfig = config;
 
