@@ -370,17 +370,23 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
  +/
 void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuration config)
 {
+    import std.array : Appender;
     import core.time : seconds;
+
+    enum initialAppenderSize = 1_048_576 * 2;
 
     immutable delayBetweenImages = config.delayBetweenImagesSeconds.seconds;
     immutable requestTimeout = config.requestTimeoutSeconds.seconds;
+
+    Appender!(ubyte[]) buffer;
+    buffer.reserve(initialAppenderSize);
 
     imageloop:
     foreach (immutable i, const image; images)
     {
         foreach (immutable retry; 0..config.retriesPerFile)
         {
-            import requests : RequestException, TimeoutException;
+            import std.net.curl : CurlException, CurlTimeoutException; //, HTTPStatusException;
             import std.stdio : stdout, write, writeln;
 
             try
@@ -399,7 +405,7 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
                 }
 
                 immutable success = config.dryRun ||
-                    downloadImage(image.url, image.localPath, requestTimeout);
+                    downloadImage(buffer, image.url, image.localPath, requestTimeout);
 
                 if (success)
                 {
@@ -412,18 +418,24 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
                     stdout.flush();
                 }
             }
-            catch (TimeoutException e)
+            catch (CurlTimeoutException e)
             {
                 // Retry
                 write('.');
                 stdout.flush();
             }
-            catch (RequestException e)
+            catch (CurlException e)
             {
                 // Unexpected network error; retry
                 write('.');
                 stdout.flush();
             }
+            /*catch (HTTPStatusException e)
+            {
+                // 404?
+                write('!');
+                stdout.flush();
+            }*/
             catch (Exception e)
             {
                 writeln();
@@ -438,6 +450,7 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
     Downloads an image from the `prnt.sc` server.
 
     Params:
+        buffer = Appender to save the downloaded image to.
         url = HTTP URL to fetch.
         imagePath = Filename to save the downloaded image to.
         requestTimeout = Timeout to use when downloading.
@@ -446,25 +459,36 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
         `true` if a file was successfully downloaded (including passing the
         size check); `false` if not.
  +/
-bool downloadImage(const string url, const string imagePath, const Duration requestTimeout)
+bool downloadImage(ref Appender!(ubyte[]) buffer, const string url,
+    const string imagePath, const Duration requestTimeout)
 {
-    import requests : Request;
+    import std.array : Appender;
+    import std.net.curl : HTTP;
     import std.stdio : File;
 
-    Request req;
-    req.timeout = requestTimeout;
-    req.keepAlive = false;
-    auto res = req.get(url);
+    auto http = HTTP(url);
+    http.dnsTimeout = requestTimeout;
+    http.connectTimeout = requestTimeout;
+    http.dataTimeout = requestTimeout;
 
-    if (res.code != 200) return false;
+    scope(exit) buffer.clear();
 
-    if (!hasValidPNGEnding(res.responseBody.data) && !hasValidJPEGEnding(res.responseBody.data))
+    http.onReceive = (ubyte[] data)
+    {
+        buffer.put(data);
+        return data.length;
+    };
+
+    http.perform();
+    if (http.statusLine.code != 200) return false;
+
+    if (!hasValidPNGEnding(buffer.data) && !hasValidJPEGEnding(buffer.data))
     {
         // Interrupted download?
         return false;
     }
 
-    File(imagePath, "w").rawWrite(res.responseBody.data);
+    File(imagePath, "w").rawWrite(buffer.data);
     return true;
 }
 
@@ -536,16 +560,18 @@ bool ensureImageDirectory(const string targetDirectory)
         requestTimeoutSeconds = Request timeout when downloading the list.
 
     Returns:
-        A buffer struct containing the response body of the request.
+        An array containing the response body of the request.
  +/
-auto getImageList(const string cookie, const uint requestTimeoutSeconds)
+ubyte[] getImageList(const string cookie, const uint requestTimeoutSeconds)
 {
-    import requests : Request;
+    import std.array : Appender;
+    import std.net.curl : HTTP;
     import core.time : seconds;
 
     enum url = "https://api.prntscr.com/v1/";
-    enum post = `{"jsonrpc":"2.0","method":"get_user_screens","id":1,"params":{"count":10000}}`;
+    enum postData = `{"jsonrpc":"2.0","method":"get_user_screens","id":1,"params":{"count":10000}}`;
     enum webform = "application/x-www-form-urlencoded";
+    enum initialAppenderSize = 1_048_576;
 
     immutable headers =
     [
@@ -565,12 +591,31 @@ auto getImageList(const string cookie, const uint requestTimeoutSeconds)
         "cookie"          : "__auth=" ~ cookie,
     ];
 
-    Request req;
-    req.timeout = requestTimeoutSeconds.seconds;
-    req.keepAlive = false;
-    req.addHeaders(headers);
-    auto res = req.post(url, post, webform);
-    return res.responseBody.data;
+    auto http = HTTP(url);
+    http.dnsTimeout = requestTimeoutSeconds.seconds;
+    http.connectTimeout = requestTimeoutSeconds.seconds;
+    http.dataTimeout = requestTimeoutSeconds.seconds;
+    http.clearRequestHeaders();
+    http.setPostData(postData, webform);
+
+    foreach (immutable header, immutable value; headers)
+    {
+        http.addRequestHeader(header, value);
+    }
+
+    Appender!(ubyte[]) sink;
+    sink.reserve(initialAppenderSize);
+
+    http.onReceive = (ubyte[] data)
+    {
+        sink.put(data);
+        return data.length;
+    };
+
+    http.perform();
+    if (http.statusLine.code != 200) return null;
+
+    return sink.data;
 }
 
 
