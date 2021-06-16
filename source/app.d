@@ -370,10 +370,16 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
  +/
 void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuration config)
 {
+    import std.array : Appender;
     import core.time : seconds;
+
+    enum initialAppenderSize = 1_048_576 * 2;
 
     immutable delayBetweenImages = config.delayBetweenImagesSeconds.seconds;
     immutable requestTimeout = config.requestTimeoutSeconds.seconds;
+
+    Appender!(ubyte[]) buffer;
+    buffer.reserve(initialAppenderSize);
 
     imageloop:
     foreach (immutable i, const image; images)
@@ -399,7 +405,7 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
                 }
 
                 immutable success = config.dryRun ||
-                    downloadImage(image.url, image.localPath, requestTimeout);
+                    downloadImage(buffer, image.url, image.localPath, requestTimeout);
 
                 if (success)
                 {
@@ -444,6 +450,7 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
     Downloads an image from the `prnt.sc` server.
 
     Params:
+        buffer = Appender to save the downloaded image to.
         url = HTTP URL to fetch.
         imagePath = Filename to save the downloaded image to.
         requestTimeout = Timeout to use when downloading.
@@ -452,7 +459,8 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
         `true` if a file was successfully downloaded (including passing the
         size check); `false` if not.
  +/
-bool downloadImage(const string url, const string imagePath, const Duration requestTimeout)
+bool downloadImage(ref Appender!(ubyte[]) buffer, const string url,
+    const string imagePath, const Duration requestTimeout)
 {
     import std.array : Appender;
     import std.net.curl : HTTP;
@@ -463,25 +471,24 @@ bool downloadImage(const string url, const string imagePath, const Duration requ
     http.connectTimeout = requestTimeout;
     http.dataTimeout = requestTimeout;
 
-    Appender!(ubyte[]) sink;
-    sink.reserve(1_048_576);
+    scope(exit) buffer.clear();
 
     http.onReceive = (ubyte[] data)
     {
-        sink.put(data);
+        buffer.put(data);
         return data.length;
     };
 
     http.perform();
     if (http.statusLine.code != 200) return false;
 
-    if (!hasValidPNGEnding(sink.data) && !hasValidJPEGEnding(sink.data))
+    if (!hasValidPNGEnding(buffer.data) && !hasValidJPEGEnding(buffer.data))
     {
         // Interrupted download?
         return false;
     }
 
-    File(imagePath, "w").rawWrite(sink.data);
+    File(imagePath, "w").rawWrite(buffer.data);
     return true;
 }
 
