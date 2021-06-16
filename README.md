@@ -1,6 +1,6 @@
 # `prnt.sc` get
 
-This command-line program downloads your Lightshot ([`prnt.sc`](https://prnt.scr)) gallery and saves it to disk. An interrupted run will be resumed on next execution.
+This command-line program downloads your Lightshot ([`prnt.sc`](https://prnt.scr)) gallery and saves it to disk.
 
 Heavily inspired by [Wipie/LightShotGalleryDownloader-CLI](https://github.com/Wipie/LightShotGalleryDownloader-CLI).
 
@@ -52,7 +52,7 @@ $ ./prntscget -c thesecretsixtyfourletterauthcookiestringgoeshere
 
 This fetches a list of 10,000 of your images and saves it to a file in the current directory (default `target.json`), then starts downloading the images therein.
 
-Subsequent executions of the program will reuse this file, so you only need to supply the cookie once, or whenever you want to update the list with new images.
+Subsequent executions of the program will reuse this file, so you only need to supply the cookie once, or whenever you want to update the list with new images. If the process was interrupted it will resume downloading where it previously stopped.
 
 A `target.json` fetched for use with [Wipie/LightShotGalleryDownloader-CLI](https://github.com/Wipie/LightShotGalleryDownloader-CLI) can be used directly as-is.
 
