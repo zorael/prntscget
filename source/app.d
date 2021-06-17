@@ -350,7 +350,7 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
             scope(exit) stdout.flush();
 
             existingFile.seek(seekPos);
-            auto existingFileEnding = existingFile.rawRead(buf);
+            const existingFileEnding = existingFile.rawRead(buf);
 
             if (hasValidJPEGEnding(existingFileEnding) || hasValidPNGEnding(existingFileEnding))
             {
@@ -458,7 +458,7 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
 
 
 /++
-    Downloads an image from the `prnt.sc` server.
+    Downloads an image from the `prnt.sc` (`prntscr.com`) server.
 
     Params:
         buffer = Appender to save the downloaded image to.
@@ -564,7 +564,7 @@ bool ensureImageDirectory(const string targetDirectory)
 
 
 /++
-    Fetches the JSON list of images for a passed cookie from the `prnt.sc` server.
+    Fetches the JSON list of images for a passed cookie from the `prnt.sc` (`prntscr.com`) server.
 
     Params:
         cookie = `__auth` cookie to fetch the gallery of.
