@@ -244,7 +244,7 @@ int run(string[] args)
 
     Params:
         args = Command-line arguments passed to the program.
-        config = [Configuration] struct to set the members of.
+        config = out [Configuration] to set the members of.
 
     Returns:
         [std.getopt.GetoptResult] as returned by the call to [std.getopt.getopt].
