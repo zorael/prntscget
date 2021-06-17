@@ -232,9 +232,8 @@ int run(string[] args)
     immutable delayBetweenImages = (cast(int)(1000 * config.delayBetweenImagesSeconds)).msecs;
     auto eta = (images.data.length + (-1)) * delayBetweenImages;
 
-    writefln("total images to download: %s -- this will take a MINIMUM of %s. " ~
-        "(waiting %s between images; use `--delay` to raise/lower)",
-        images.data.length, eta, delayBetweenImages);
+    writefln("total images to download: %s -- this will take a MINIMUM of %s.",
+        images.data.length, eta);
 
     downloadAllImages(images, config);
 
