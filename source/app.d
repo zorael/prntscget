@@ -59,7 +59,7 @@ struct Configuration
     uint requestTimeoutSeconds = 60;
 
     /// How many seconds to wait between image downloads.
-    uint delayBetweenImagesSeconds = 5;
+    double delayBetweenImagesSeconds = 1.0;
 
     /// The number of images to skip when downloading (e.g. the index starting position).
     uint startingImagePosition;
@@ -117,7 +117,7 @@ int run(string[] args)
     import std.file : exists, readText;
     import std.json : parseJSON;
     import std.stdio : writefln, writeln;
-    import core.time : seconds;
+    import core.time : msecs, seconds;
 
     Configuration config;
 
@@ -216,12 +216,12 @@ int run(string[] args)
             numExistingImages.plurality("image", "images"));
     }
 
+    immutable delayBetweenImages = (cast(int)(1000 * config.delayBetweenImagesSeconds)).msecs;
+    auto eta = (images.data.length + (-1)) * delayBetweenImages;
+
     writefln("total images to download: %s -- this will take a MINIMUM of %s. " ~
-        "(waiting %d %s between images; use `--delay` to change)",
-        images.data.length,
-        (images.data.length+(-1))*config.delayBetweenImagesSeconds.seconds,
-        config.delayBetweenImagesSeconds,
-        config.delayBetweenImagesSeconds.plurality("second", "seconds"));
+        "(waiting %s between images; use `--delay` to raise/lower)",
+        images.data.length, eta, delayBetweenImages);
 
     downloadAllImages(images, config);
 
@@ -370,11 +370,11 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
 void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuration config)
 {
     import std.array : Appender;
-    import core.time : seconds;
+    import core.time : msecs, seconds;
 
     enum initialAppenderSize = 1_048_576 * 2;
 
-    immutable delayBetweenImages = config.delayBetweenImagesSeconds.seconds;
+    immutable delayBetweenImages = (cast(int)(1000 * config.delayBetweenImagesSeconds)).msecs;
     immutable requestTimeout = config.requestTimeoutSeconds.seconds;
 
     Appender!(ubyte[]) buffer;
