@@ -1,5 +1,5 @@
 name "prntscget"
-description "prnt.sc gallery downloader"
+description "prnt.sc/prntscr.com gallery downloader"
 authors "JR"
 copyright "Copyright © 2021, JR"
 license "MIT"
