@@ -152,15 +152,9 @@ int run(string[] args)
 
         writeln(banner);
 
-        immutable usageLine = "\nusage: %s [options] [json file]\n".format(args[0].baseName);
+        immutable usageLine = "\nusage: %s [options]\n".format(args[0].baseName);
         defaultGetoptPrinter(usageLine, results.options);
         return ShellReturn.success;
-    }
-
-    if (args.length > 1)
-    {
-        config.listFile = args[1];
-        //args = args[1..$];
     }
 
     /// JSON image list, fetched from the server
@@ -261,6 +255,9 @@ auto handleGetopt(ref string[] args, out Configuration config)
         "c|cookie",
             "Cookie to download gallery of (see README).",
             &config.cookie,
+        "f|file",
+            "Filename to save the JSON list of images to.",
+            &config.listFile,
         "d|dir",
             "Target image directory.",
             &config.targetDirectory,
