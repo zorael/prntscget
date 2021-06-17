@@ -23,9 +23,10 @@ $ dub build
 ## How to use
 
 ```
-usage: prntscget [options] [json file]
+usage: prntscget [options]
 
 -c  --cookie Cookie to download gallery of (see README).
+-f    --file Filename to save the JSON list of images to.
 -d     --dir Target image directory.
 -s   --start Starting image position.
 -n     --num Number of images to download.
