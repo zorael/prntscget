@@ -224,7 +224,7 @@ int run(string[] args)
     }
 
     immutable delayBetweenImages = (cast(int)(1000 * config.delayBetweenImagesSeconds)).msecs;
-    auto eta = (images.data.length + (-1)) * delayBetweenImages;
+    immutable eta = (images.data.length + (-1)) * delayBetweenImages;
 
     writeln("image list JSON file: ", config.listFile);
     writefln("delay between images: %.1f seconds", config.delayBetweenImagesSeconds);
