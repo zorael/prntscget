@@ -68,10 +68,32 @@ struct Configuration
     uint numToDownload = uint.max;
 
     /// `__auth` cookie string specified at the command line.
-    string specifiedCookie;
+    string cookie;
 
     /// Whether or not this is a dry run.
     bool dryRun;
+}
+
+
+/++
+    Program state.
+ +/
+struct Context
+{
+    /// The current configuration as set via `getopt`.
+    Configuration config;
+
+    /// The list of images to download.
+    Appender!(RemoteImage[]) images;
+
+    /// The JSON list of images fetched from the server.
+    JSONValue listJSON;
+
+    /// Request timeout when downloading an image, as a `Duration`.
+    Duration requestTimeout;
+
+    /// How many seconds to wait between image downloads, as a `Duration`.
+    Duration delayBetweenImages;
 }
 
 
@@ -119,9 +141,9 @@ int run(string[] args)
     import std.stdio : writefln, writeln;
     import core.time : msecs, seconds;
 
-    Configuration config;
+    Context ctx;
 
-    auto results = handleGetopt(args, config);
+    auto results = handleGetopt(args, ctx.config);
 
     if (results.helpWanted)
     {
@@ -146,20 +168,20 @@ int run(string[] args)
 
     if (args.length > 1)
     {
-        config.listFile = args[1];
+        ctx.config.listFile = args[1];
         //args = args[1..$];
     }
 
-    /// JSON image list, fetched from the server
-    JSONValue listJSON;
+    ctx.requestTimeout = ctx.config.requestTimeoutSeconds.seconds;
+    ctx.delayBetweenImages = (cast(int)(1000 * ctx.config.delayBetweenImagesSeconds)).msecs;
 
-    if (config.specifiedCookie.length)
+    if (ctx.config.cookie.length)
     {
         import std.algorithm.searching : canFind;
         import std.stdio : File;
 
-        writefln(`fetching image list JSON and saving into "%s"...`, config.listFile);
-        const listFileContents = getImageList(config.specifiedCookie, config.requestTimeoutSeconds);
+        writefln(`fetching image list JSON and saving into "%s"...`, ctx.config.listFile);
+        const listFileContents = getImageList(ctx);
 
         if (!listFileContents.canFind(`"result":{"success":true,`))
         {
@@ -167,32 +189,32 @@ int run(string[] args)
             return 1;
         }
 
-        listJSON = parseJSON(cast(string)listFileContents);
-        immutable total = listJSON["result"]["total"].integer;
+        ctx.listJSON = parseJSON(cast(string)listFileContents);
+        immutable total = ctx.listJSON["result"]["total"].integer;
         writefln("%d %s found.", total, total.plurality("image", "images"));
-        if (!config.dryRun) File(config.listFile, "w").writeln(listJSON.toPrettyString);
+        if (!ctx.config.dryRun) File(ctx.config.listFile, "w").writeln(ctx.listJSON.toPrettyString);
     }
-    else if (!config.listFile.exists)
+    else if (!ctx.config.listFile.exists)
     {
-        writefln(`image list JSON file "%s" does not exist.`, config.listFile);
+        writefln(`image list JSON file "%s" does not exist.`, ctx.config.listFile);
         return 1;
     }
 
-    if (!ensureImageDirectory(config.targetDirectory))
+    if (!ensureImageDirectory(ctx.config.targetDirectory))
     {
-        writefln(`"%s" is not a directory.`, config.targetDirectory);
+        writefln(`"%s" is not a directory.`, ctx.config.targetDirectory);
         return 1;
     }
 
-    if (listJSON == JSONValue.init)  // (listJSON.type == JSONType.null_)
+    if (ctx.listJSON == JSONValue.init)  // (listJSON.type == JSONType.null_)
     {
         // A cookie was not supplied and the list JSON was never read
-        listJSON = config.listFile
+        ctx.listJSON = ctx.config.listFile
             .readText
             .parseJSON;
     }
 
-    immutable numImages = cast(size_t)listJSON["result"]["total"].integer;
+    immutable numImages = cast(size_t)(ctx.listJSON["result"]["total"].integer);
 
     if (!numImages)
     {
@@ -200,11 +222,10 @@ int run(string[] args)
         return 0;
     }
 
-    Appender!(RemoteImage[]) images;
-    images.reserve(numImages);
-    immutable numExistingImages = enumerateImages(images, listJSON, config, numImages);
+    ctx.images.reserve(numImages);
+    immutable numExistingImages = enumerateImages(ctx, numImages);
 
-    if (!images.data.length)
+    if (!ctx.images.data.length)
     {
         writefln("\nno images to fetch -- all %d are already downloaded.", numImages);
         return 0;
@@ -216,14 +237,13 @@ int run(string[] args)
             numExistingImages.plurality("image", "images"));
     }
 
-    immutable delayBetweenImages = (cast(int)(1000 * config.delayBetweenImagesSeconds)).msecs;
-    auto eta = (images.data.length + (-1)) * delayBetweenImages;
+    auto eta = (ctx.images.data.length + (-1)) * ctx.delayBetweenImages;
 
     writefln("total images to download: %s -- this will take a MINIMUM of %s. " ~
         "(waiting %s between images; use `--delay` to raise/lower)",
-        images.data.length, eta, delayBetweenImages);
+        ctx.images.data.length, eta, ctx.delayBetweenImages);
 
-    downloadAllImages(images, config);
+    downloadAllImages(ctx);
 
     writeln("done.");
     return 0;
@@ -248,7 +268,7 @@ auto handleGetopt(ref string[] args, out Configuration config)
         getoptConfig.caseSensitive,
         "c|cookie",
             "Cookie to download gallery of (see README).",
-            &config.specifiedCookie,
+            &config.cookie,
         "d|dir",
             "Target image directory.",
             &config.targetDirectory,
@@ -278,17 +298,14 @@ auto handleGetopt(ref string[] args, out Configuration config)
     Enumerate images, skipping existing ones.
 
     Params:
-        images = [std.array.Appender] containing references to all images to download.
-        listJSON = JSON list of images to download.
-        config = The current [Configuration] of all getopt values aggregated.
+        ctx = Program state.
         numImages = The number of images to download, when specified as a lower
             number than the max by getopt.
 
     Returns:
         The number of images that should be downloaded.
  +/
-uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJSON,
-    const Configuration config, const size_t numImages)
+uint enumerateImages(ref Context ctx, const size_t numImages)
 {
     import std.algorithm.comparison : min;
     import std.range : drop, enumerate, retro, take;
@@ -296,11 +313,11 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
     uint numExistingImages;
     bool outputPreamble;
 
-    auto range = listJSON["result"]["screens"]
+    auto range = ctx.listJSON["result"]["screens"]
         .array
         .retro
-        .drop(config.startingImagePosition)
-        .take(min(config.numToDownload, numImages))
+        .drop(ctx.config.startingImagePosition)
+        .take(min(ctx.config.numToDownload, numImages))
         .enumerate;
 
     foreach (immutable i, imageJSON; range)
@@ -314,7 +331,7 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
             .replace(" ", "_")
             .replaceFirst(":", "h")
             .replaceFirst(":", "m") ~ url.extension;
-        immutable localPath = buildPath(config.targetDirectory, filename);
+        immutable localPath = buildPath(ctx.config.targetDirectory, filename);
 
         if (localPath.exists)
         {
@@ -352,7 +369,7 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
             }
         }
 
-        images ~= RemoteImage(url, localPath, i);
+        ctx.images ~= RemoteImage(url, localPath, i);
     }
 
     return numExistingImages;
@@ -364,36 +381,32 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
     Images are saved to the filename specified in each [RemoteImage.localPath].
 
     Params:
-        images = The list of images to download.
-        config = The current program [Configuration].
+        ctx = Program state.
  +/
-void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuration config)
+void downloadAllImages(const Context ctx)
 {
     import std.array : Appender;
     import core.time : msecs, seconds;
 
     enum initialAppenderSize = 1_048_576 * 2;
 
-    immutable delayBetweenImages = (cast(int)(1000 * config.delayBetweenImagesSeconds)).msecs;
-    immutable requestTimeout = config.requestTimeoutSeconds.seconds;
-
     Appender!(ubyte[]) buffer;
     buffer.reserve(initialAppenderSize);
 
     imageloop:
-    foreach (immutable i, const image; images)
+    foreach (immutable i, const image; ctx.images)
     {
-        foreach (immutable retry; 0..config.retriesPerFile)
+        foreach (immutable retry; 0..ctx.config.retriesPerFile)
         {
             import std.net.curl : CurlException, CurlTimeoutException; //, HTTPStatusException;
             import std.stdio : stdout, write, writeln;
 
             try
             {
-                if (!config.dryRun && (i != 0) && ((i != (images.data.length+(-1))) || (i == 1)))
+                if (!ctx.config.dryRun && (i != 0) && ((i != (ctx.images.data.length+(-1))) || (i == 1)))
                 {
                     import core.thread : Thread;
-                    Thread.sleep(delayBetweenImages);
+                    Thread.sleep(ctx.delayBetweenImages);
                 }
 
                 if (retry == 0)
@@ -403,8 +416,8 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
                     stdout.flush();
                 }
 
-                immutable success = config.dryRun ||
-                    downloadImage(buffer, image.url, image.localPath, requestTimeout);
+                immutable success = ctx.config.dryRun ||
+                    downloadImage(buffer, image.url, image.localPath, ctx.requestTimeout);
 
                 if (success)
                 {
@@ -555,13 +568,12 @@ bool ensureImageDirectory(const string targetDirectory)
     Fetches the JSON list of images for a passed cookie from the `prnt.sc` server.
 
     Params:
-        cookie = `__auth` cookie to fetch the gallery of.
-        requestTimeoutSeconds = Request timeout when downloading the list.
+        ctx = Program state.
 
     Returns:
         An array containing the response body of the request.
  +/
-ubyte[] getImageList(const string cookie, const uint requestTimeoutSeconds)
+ubyte[] getImageList(const Context ctx)
 {
     import std.array : Appender;
     import std.net.curl : HTTP;
@@ -587,13 +599,13 @@ ubyte[] getImageList(const string cookie, const uint requestTimeoutSeconds)
         "sec-fetch-dest"  : "empty",
         "referer"         : "https://prntscr.com/gallery.html",
         "accept-language" : "fr-CA,fr;q=0.9,fr-FR;q=0.8,en-US;q=0.7,en;q=0.6,it;q=0.5,ru;q=0.4",
-        "cookie"          : "__auth=" ~ cookie,
+        "cookie"          : "__auth=" ~ ctx.config.cookie,
     ];
 
     auto http = HTTP(url);
-    http.dnsTimeout = requestTimeoutSeconds.seconds;
-    http.connectTimeout = requestTimeoutSeconds.seconds;
-    http.dataTimeout = requestTimeoutSeconds.seconds;
+    http.dnsTimeout = ctx.requestTimeout;
+    http.connectTimeout = ctx.requestTimeout;
+    http.dataTimeout = ctx.requestTimeout;
     http.clearRequestHeaders();
     http.setPostData(postData, webform);
 
