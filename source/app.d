@@ -86,6 +86,9 @@ struct Context
     /// The list of images to download.
     Appender!(RemoteImage[]) images;
 
+    /// Number of images as reported in `listJSON`.
+    size_t numImages;
+
     /// The JSON list of images fetched from the server.
     JSONValue listJSON;
 
@@ -217,20 +220,20 @@ int run(string[] args)
             .parseJSON;
     }
 
-    immutable numImages = cast(size_t)(ctx.listJSON["result"]["total"].integer);
+    ctx.numImages = cast(size_t)(ctx.listJSON["result"]["total"].integer);
 
-    if (!numImages)
+    if (!ctx.numImages)
     {
         writeln("no images to fetch.");
         return 0;
     }
 
-    ctx.images.reserve(numImages);
-    immutable numExistingImages = enumerateImages(ctx, numImages);
+    ctx.images.reserve(ctx.numImages);
+    immutable numExistingImages = enumerateImages(ctx);
 
     if (!ctx.images.data.length)
     {
-        writefln("\nno images to fetch -- all %d are already downloaded.", numImages);
+        writefln("\nno images to fetch -- all %d are already downloaded.", ctx.numImages);
         return 0;
     }
 
@@ -302,13 +305,11 @@ auto handleGetopt(ref string[] args, out Configuration config)
 
     Params:
         ctx = Program state.
-        numImages = The number of images to download, when specified as a lower
-            number than the max by getopt.
 
     Returns:
         The number of images that should be downloaded.
  +/
-uint enumerateImages(ref Context ctx, const size_t numImages)
+uint enumerateImages(ref Context ctx)
 {
     import std.algorithm.comparison : min;
     import std.range : drop, enumerate, retro, take;
@@ -320,7 +321,7 @@ uint enumerateImages(ref Context ctx, const size_t numImages)
         .array
         .retro
         .drop(ctx.config.startingImagePosition)
-        .take(min(ctx.config.numToDownload, numImages))
+        .take(min(ctx.config.numToDownload, ctx.numImages))
         .enumerate;
 
     foreach (immutable i, imageJSON; range)
