@@ -591,9 +591,10 @@ ubyte[] getImageList(const string cookie, const uint requestTimeoutSeconds)
     ];
 
     auto http = HTTP(url);
-    http.dnsTimeout = requestTimeoutSeconds.seconds;
-    http.connectTimeout = requestTimeoutSeconds.seconds;
-    http.dataTimeout = requestTimeoutSeconds.seconds;
+    immutable requestTimeout = requestTimeoutSeconds.seconds;
+    http.dnsTimeout = requestTimeout;
+    http.connectTimeout = requestTimeout;
+    http.dataTimeout = requestTimeout;
     http.clearRequestHeaders();
     http.setPostData(postData, webform);
 
