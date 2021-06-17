@@ -68,7 +68,7 @@ struct Configuration
     uint numToDownload = uint.max;
 
     /// `__auth` cookie string specified at the command line.
-    string specifiedCookie;
+    string cookie;
 
     /// Whether or not this is a dry run.
     bool dryRun;
@@ -166,13 +166,13 @@ int run(string[] args)
     /// JSON image list, fetched from the server
     JSONValue listJSON;
 
-    if (config.specifiedCookie.length)
+    if (config.cookie.length)
     {
         import std.algorithm.searching : canFind;
         import std.stdio : File;
 
         writefln(`fetching image list JSON and saving into "%s"...`, config.listFile);
-        const listFileContents = getImageList(config.specifiedCookie, config.requestTimeoutSeconds);
+        const listFileContents = getImageList(config.cookie, config.requestTimeoutSeconds);
 
         if (!listFileContents.canFind(`"result":{"success":true,`))
         {
@@ -261,7 +261,7 @@ auto handleGetopt(ref string[] args, out Configuration config)
         getoptConfig.caseSensitive,
         "c|cookie",
             "Cookie to download gallery of (see README).",
-            &config.specifiedCookie,
+            &config.cookie,
         "d|dir",
             "Target image directory.",
             &config.targetDirectory,
