@@ -94,6 +94,9 @@ struct Context
 
     /// How many seconds to wait between image downloads, as a `Duration`.
     Duration delayBetweenImages;
+
+    /// Don't copy this.
+    @disable this(this);
 }
 
 
@@ -383,7 +386,7 @@ uint enumerateImages(ref Context ctx, const size_t numImages)
     Params:
         ctx = Program state.
  +/
-void downloadAllImages(const Context ctx)
+void downloadAllImages(const ref Context ctx)
 {
     import std.array : Appender;
     import core.time : msecs, seconds;
@@ -573,7 +576,7 @@ bool ensureImageDirectory(const string targetDirectory)
     Returns:
         An array containing the response body of the request.
  +/
-ubyte[] getImageList(const Context ctx)
+ubyte[] getImageList(const ref Context ctx)
 {
     import std.array : Appender;
     import std.net.curl : HTTP;
