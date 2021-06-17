@@ -365,7 +365,7 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
             }
         }
 
-        images ~= RemoteImage(url, localPath, i);
+        images ~= RemoteImage(url, localPath, (i + config.startingImagePosition));
     }
 
     return numExistingImages;
