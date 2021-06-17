@@ -226,6 +226,9 @@ int run(string[] args)
     immutable delayBetweenImages = (cast(int)(1000 * config.delayBetweenImagesSeconds)).msecs;
     auto eta = (images.data.length + (-1)) * delayBetweenImages;
 
+    writeln("image list JSON file: ", config.listFile);
+    writefln("delay between images: %.1f seconds", config.delayBetweenImagesSeconds);
+    writeln("saving to directory:  ", config.targetDirectory);
     writefln("total images to download: %s -- this will take a MINIMUM of %s.",
         images.data.length, eta);
 
