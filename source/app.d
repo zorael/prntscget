@@ -456,7 +456,7 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
 
     Returns:
         `true` if a file was successfully downloaded (including passing the
-        size check); `false` if not.
+        image format ending checks); `false` if not.
  +/
 bool downloadImage(ref Appender!(ubyte[]) buffer, const string url,
     const string imagePath, const Duration requestTimeout)
