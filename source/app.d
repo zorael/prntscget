@@ -76,6 +76,19 @@ struct Configuration
 
 
 /++
+    Shell return values.
+ +/
+enum ShellReturn : int
+{
+    success           = 0,  /// Success.
+    exception         = 1,  /// An unhandled exception was thrown.
+    failedToFetchList = 2,  /// The JSON list of images could not be fetched from server.
+    imageJSONNotFound = 3,  /// The JSON list file could not be found.
+    targetDirNotADir  = 4,  /// Target directory is a file or other non-directory.
+}
+
+
+/++
     Program entry point.
 
     Merely passes execution to [run], wrapped in a try-catch.
@@ -96,7 +109,7 @@ int main(string[] args)
     {
         import std.stdio : writeln;
         writeln("exception thrown: ", e.msg);
-        return 1;
+        return ShellReturn.exception;
     }
 
     assert(0);
@@ -141,7 +154,7 @@ int run(string[] args)
 
         immutable usageLine = "\nusage: %s [options] [json file]\n".format(args[0].baseName);
         defaultGetoptPrinter(usageLine, results.options);
-        return 0;
+        return ShellReturn.success;
     }
 
     if (args.length > 1)
@@ -164,7 +177,7 @@ int run(string[] args)
         if (!listFileContents.canFind(`"result":{"success":true,`))
         {
             writeln("failed to fetch image list. incorrect cookie?");
-            return 1;
+            return ShellReturn.failedToFetchList;
         }
 
         listJSON = parseJSON(cast(string)listFileContents);
@@ -175,13 +188,13 @@ int run(string[] args)
     else if (!config.listFile.exists)
     {
         writefln(`image list JSON file "%s" does not exist.`, config.listFile);
-        return 1;
+        return ShellReturn.imageJSONNotFound;
     }
 
     if (!ensureImageDirectory(config.targetDirectory))
     {
         writefln(`"%s" is not a directory.`, config.targetDirectory);
-        return 1;
+        return ShellReturn.targetDirNotADir;
     }
 
     if (listJSON == JSONValue.init)  // (listJSON.type == JSONType.null_)
@@ -197,7 +210,7 @@ int run(string[] args)
     if (!numImages)
     {
         writeln("no images to fetch.");
-        return 0;
+        return ShellReturn.success;
     }
 
     Appender!(RemoteImage[]) images;
@@ -207,7 +220,7 @@ int run(string[] args)
     if (!images.data.length)
     {
         writefln("\nno images to fetch -- all %d are already downloaded.", numImages);
-        return 0;
+        return ShellReturn.success;
     }
 
     if (numExistingImages > 0)
@@ -226,7 +239,7 @@ int run(string[] args)
     downloadAllImages(images, config);
 
     writeln("done.");
-    return 0;
+    return ShellReturn.success;
 }
 
 
