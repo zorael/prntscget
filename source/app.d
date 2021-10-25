@@ -197,7 +197,7 @@ int run(string[] args)
     }
 
     Appender!(RemoteImage[]) images;
-    images.reserve(numImages);
+    images.reserve(min(numImages, config.numToDownload));
     immutable numExistingImages = enumerateImages(images, listJSON, config, numImages);
 
     if (!images.data.length)
