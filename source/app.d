@@ -8,6 +8,7 @@ module prntscget.app;
 private:
 
 import std.array : Appender;
+import std.getopt : GetoptResult;
 import std.json : JSONValue;
 import core.time : Duration;
 
@@ -138,22 +139,7 @@ int run(string[] args)
 
     if (results.helpWanted)
     {
-        import prntscget.semver : PrntscgetSemVer, PrntscgetSemVerPrerelease;
-        import std.format : format;
-        import std.getopt : defaultGetoptPrinter;
-        import std.path : baseName;
-
-        enum banner = "prntscget v%d.%d.%d%s, built on %s".format(
-            PrntscgetSemVer.majorVersion,
-            PrntscgetSemVer.minorVersion,
-            PrntscgetSemVer.patchVersion,
-            PrntscgetSemVerPrerelease,
-            __TIMESTAMP__);
-
-        writeln(banner);
-
-        immutable usageLine = "\nusage: %s [options]\n".format(args[0].baseName);
-        defaultGetoptPrinter(usageLine, results.options);
+        printHelp(results, args);
         return ShellReturn.success;
     }
 
@@ -283,6 +269,35 @@ auto handleGetopt(ref string[] args, out Configuration config)
             "Download nothing, only echo what would be done.",
             &config.dryRun,
     );
+}
+
+
+/++
+    Prinst the `getopt` help screen to the terminal.
+
+    Params:
+        results = The results as returned from the `getopt` call.
+        args = The shell arguments passed to the program.
+ +/
+void printHelp(GetoptResult results, const string[] args)
+{
+    import prntscget.semver : PrntscgetSemVer, PrntscgetSemVerPrerelease;
+    import std.format : format;
+    import std.getopt : defaultGetoptPrinter;
+    import std.path : baseName;
+    import std.stdio : writeln;
+
+    enum banner = "prntscget v%d.%d.%d%s, built on %s".format(
+        PrntscgetSemVer.majorVersion,
+        PrntscgetSemVer.minorVersion,
+        PrntscgetSemVer.patchVersion,
+        PrntscgetSemVerPrerelease,
+        __TIMESTAMP__);
+
+    writeln(banner);
+
+    immutable usageLine = "\nusage: %s [options]\n".format(args[0].baseName);
+    defaultGetoptPrinter(usageLine, results.options);
 }
 
 
