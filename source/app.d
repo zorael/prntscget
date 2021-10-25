@@ -128,10 +128,11 @@ int main(string[] args)
  +/
 int run(string[] args)
 {
-    import std.file : exists, readText;
+    import std.algorithm.comparison : min;
+    import std.file : exists;
     import std.json : parseJSON;
     import std.stdio : writefln, writeln;
-    import core.time : msecs, seconds;
+    import core.time : msecs;
 
     Configuration config;
 
@@ -179,6 +180,8 @@ int run(string[] args)
 
     if (listJSON == JSONValue.init)  // (listJSON.type == JSONType.null_)
     {
+        import std.file : readText;
+
         // A cookie was not supplied and the list JSON was never read
         listJSON = config.listFile
             .readText
