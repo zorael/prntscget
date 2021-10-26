@@ -476,6 +476,37 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
 
 
 /++
+    Builds an associative array of HTTP GET headers to use when requesting
+    information of images from the server.
+
+    Params:
+        cookie = The gallery `__auth` cookie.
+
+    Returns:
+        A `string[string]` associative array of headers.
+ +/
+string[string] buildHeaders(const string cookie)
+{
+    return
+    [
+        "authority"       : "api.prntscr.com",
+        "pragma"          : "no-cache",
+        "cache-control"   : "no-cache",
+        "accept"          : "application/json, text/javascript, */*; q=0.01",
+        "user-agent"      : "Mozilla/5.0 (X11; Linux x86_64; rv:93.0) Gecko/20100101 Firefox/93.0",
+        "content-type"    : "application/json",
+        "origin"          : "https://image.prntscr.com",
+        "sec-fetch-site"  : "same-site",
+        "sec-fetch-mode"  : "cors",
+        "sec-fetch-dest"  : "empty",
+        "referer"         : "https://prntscr.com",
+        "accept-language" : "fr-CA,fr;q=0.9,fr-FR;q=0.8,en-US;q=0.7,en;q=0.6,it;q=0.5,ru;q=0.4",
+        "cookie"          : "__auth=" ~ cookie,
+    ];
+}
+
+
+/++
     Downloads an image from the `prnt.sc` (`prntscr.com`) server.
 
     Params:
