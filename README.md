@@ -55,7 +55,7 @@ This fetches a list of 10,000 of your images and saves it to a file in the curre
 
 Subsequent executions of the program will reuse this file, so you only need to supply the cookie once, or whenever you want to update the list with new images. If the process was interrupted it will resume downloading where it previously stopped.
 
-A `target.json` fetched for use with [Wipie/LightShotGalleryDownloader-CLI](https://github.com/Wipie/LightShotGalleryDownloader-CLI) can be used directly as-is.
+> Note that the cookie should be kept secret. Furthermore it is saved to this file, so spreading it to others can give them access to your gallery.
 
 ## License
 
