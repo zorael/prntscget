@@ -86,6 +86,7 @@ enum ShellReturn : int
     failedToFetchList = 2,  /// The JSON list of images could not be fetched from server.
     imageJSONNotFound = 3,  /// The JSON list file could not be found.
     targetDirNotADir  = 4,  /// Target directory is a file or other non-directory.
+    noCookieInJSON    = 5,  /// The JSON file is old and does not have a cookie saved in it.
 }
 
 
@@ -129,8 +130,10 @@ int main(string[] args)
 int run(string[] args)
 {
     import std.algorithm.comparison : min;
+    import std.array : array;
     import std.file : exists;
     import std.json : parseJSON;
+    import std.range : take;
     import std.stdio : writefln, writeln;
     import core.time : msecs;
 
@@ -147,13 +150,18 @@ int run(string[] args)
     /// JSON image list, fetched from the server
     JSONValue listJSON;
 
+    /// HTTP GET request headers to use when downloading
+    string[string] headers;
+
     if (config.cookie.length)
     {
         import std.algorithm.searching : canFind;
         import std.stdio : File;
 
-        writefln(`fetching image list JSON and saving into "%s"...`, config.listFile);
-        const listFileContents = getImageList(config.cookie, config.requestTimeoutSeconds);
+        headers = buildHeaders(config.cookie);
+
+        writefln(`fetching image list and saving into "%s"...`, config.listFile);
+        const listFileContents = getImageList(headers, config.requestTimeoutSeconds);
 
         if (!listFileContents.canFind(`"result":{"success":true,`))
         {
@@ -162,6 +170,7 @@ int run(string[] args)
         }
 
         listJSON = parseJSON(cast(string)listFileContents);
+        listJSON["cookie"] = config.cookie;  // Store the cookie! We need it nowadays.
         immutable total = listJSON["result"]["total"].integer;
         writefln("%d %s found.", total, total.plurality("image", "images"));
         if (!config.dryRun) File(config.listFile, "w").writeln(listJSON.toPrettyString);
@@ -186,6 +195,14 @@ int run(string[] args)
         listJSON = config.listFile
             .readText
             .parseJSON;
+
+        if ("cookie" !in listJSON)
+        {
+            writeln("your JSON file does not contain a cookie and must be regenerated.");
+            return ShellReturn.noCookieInJSON;
+        }
+
+        headers = buildHeaders(listJSON["cookie"].str);
     }
 
     immutable numImages = cast(size_t)listJSON["result"]["total"].integer;
@@ -198,7 +215,7 @@ int run(string[] args)
 
     Appender!(RemoteImage[]) images;
     images.reserve(min(numImages, config.numToDownload));
-    immutable numExistingImages = enumerateImages(images, listJSON, config, numImages);
+    immutable numExistingImages = enumerateImages(images, listJSON, config);
 
     if (!images.data.length)
     {
@@ -212,6 +229,10 @@ int run(string[] args)
             numExistingImages.plurality("image", "images"));
     }
 
+    const imageSelection = images.data
+        .array
+        .take(min(config.numToDownload, numImages));
+
     immutable delayBetweenImages = (cast(int)(1000 * config.delayBetweenImagesSeconds)).msecs;
     immutable eta = (images.data.length + (-1)) * delayBetweenImages;
 
@@ -221,7 +242,7 @@ int run(string[] args)
     writefln("total images to download: %s -- this will take a MINIMUM of %s.",
         images.data.length, eta);
 
-    downloadAllImages(images, config);
+    downloadAllImages(imageSelection, config, headers);
 
     writeln("done.");
     return ShellReturn.success;
@@ -311,17 +332,15 @@ void printHelp(GetoptResult results, const string[] args)
         images = [std.array.Appender] containing references to all images to download.
         listJSON = JSON list of images to download.
         config = The current [Configuration] of all getopt values aggregated.
-        numImages = The number of images to download, when specified as a lower
-            number than the max by getopt.
 
     Returns:
         The number of images that should be downloaded.
  +/
-uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJSON,
-    const Configuration config, const size_t numImages)
+uint enumerateImages(ref Appender!(RemoteImage[]) images,
+    const JSONValue listJSON,
+    const Configuration config)
 {
-    import std.algorithm.comparison : min;
-    import std.range : drop, enumerate, retro, take;
+    import std.range : drop, enumerate, retro;
 
     uint numExistingImages;
     bool outputPreamble;
@@ -330,7 +349,6 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
         .array
         .retro
         .drop(config.startingImagePosition)
-        .take(min(config.numToDownload, numImages))
         .enumerate;
 
     foreach (immutable i, imageJSON; range)
@@ -377,10 +395,12 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
             {
                 write('.');
                 ++numExistingImages;
+                // continue without appending the image entry
                 continue;
             }
             else
             {
+                // drop down to append the image entry and re-download the file
                 write('!');
             }
         }
@@ -399,8 +419,11 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
     Params:
         images = The list of images to download.
         config = The current program [Configuration].
+        headers = HTTP GET headers to supply when downloading.
  +/
-void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuration config)
+void downloadAllImages(const RemoteImage[] images,
+    const Configuration config,
+    const string[string] headers)
 {
     import std.array : Appender;
     import core.time : msecs, seconds;
@@ -423,7 +446,7 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
 
             try
             {
-                if (!config.dryRun && (i != 0) && ((i != (images.data.length+(-1))) || (i == 1)))
+                if (!config.dryRun && (i != 0) && ((i != (images.length+(-1))) || (i == 1)))
                 {
                     import core.thread : Thread;
                     Thread.sleep(delayBetweenImages);
@@ -436,30 +459,48 @@ void downloadAllImages(const Appender!(RemoteImage[]) images, const Configuratio
                     stdout.flush();
                 }
 
-                immutable success = config.dryRun ||
-                    downloadImage(buffer, image.url, image.localPath, requestTimeout);
+                immutable code = config.dryRun ? 200 :
+                    downloadImage(buffer, image.url, image.localPath, requestTimeout, headers);
 
-                if (success)
+                switch (code)
                 {
+                case 200:
+                    // HTTP OK
                     writeln("ok");
                     continue imageloop;
-                }
-                else
-                {
+
+                case 0:
+                    // magic number, non-image file was saved
+                    goto default;
+
+                case 403:
+                    // HTTP Forbidden, probable cookie error
+                    write(" !", code, "! ");
+                    stdout.flush();
+                    break;
+
+                case 520:
+                    // HTTP Origin Error, probable header error
+                    goto case 403;
+
+                default:
                     write('.');
                     stdout.flush();
+                    break;
                 }
             }
             catch (CurlTimeoutException e)
             {
                 // Retry
                 write('.');
+                writeln(e.msg);
                 stdout.flush();
             }
             catch (CurlException e)
             {
                 // Unexpected network error; retry
                 write('.');
+                writeln(e.msg);
                 stdout.flush();
             }
             /*catch (HTTPStatusException e)
@@ -517,13 +558,16 @@ string[string] buildHeaders(const string cookie)
         url = HTTP URL to fetch.
         imagePath = Filename to save the downloaded image to.
         requestTimeout = Timeout to use when downloading.
+        headers = HTTP GET headers to supply when downloading.
 
     Returns:
-        `true` if a file was successfully downloaded (including passing the
-        image format ending checks); `false` if not.
+        The HTTP code encountered when attempting to download the image.
  +/
-bool downloadImage(ref Appender!(ubyte[]) buffer, const string url,
-    const string imagePath, const Duration requestTimeout)
+int downloadImage(ref Appender!(ubyte[]) buffer,
+    const string url,
+    const string imagePath,
+    const Duration requestTimeout,
+    const string[string] headers)
 {
     import std.array : Appender;
     import std.net.curl : HTTP;
@@ -533,6 +577,12 @@ bool downloadImage(ref Appender!(ubyte[]) buffer, const string url,
     http.dnsTimeout = requestTimeout;
     http.connectTimeout = requestTimeout;
     http.dataTimeout = requestTimeout;
+    http.clearRequestHeaders();
+
+    foreach (immutable header, immutable value; headers)
+    {
+        http.addRequestHeader(header, value);
+    }
 
     scope(exit) buffer.clear();
 
@@ -543,16 +593,19 @@ bool downloadImage(ref Appender!(ubyte[]) buffer, const string url,
     };
 
     http.perform();
-    if (http.statusLine.code != 200) return false;
 
-    if (!hasValidPNGEnding(buffer.data) && !hasValidJPEGEnding(buffer.data))
+    if (http.statusLine.code == 200)
     {
-        // Interrupted download?
-        return false;
+        if (!hasValidPNGEnding(buffer.data) && !hasValidJPEGEnding(buffer.data))
+        {
+            // Interrupted download? Cloudflare error page?
+            return 0;
+        }
+
+        File(imagePath, "w").rawWrite(buffer.data);
     }
 
-    File(imagePath, "w").rawWrite(buffer.data);
-    return true;
+    return http.statusLine.code;
 }
 
 
@@ -619,13 +672,13 @@ bool ensureImageDirectory(const string targetDirectory)
     Fetches the JSON list of images for a passed cookie from the `prnt.sc` (`prntscr.com`) server.
 
     Params:
-        cookie = `__auth` cookie to fetch the gallery of.
+        headers = HTTP GET headers to supply when fetching the list.
         requestTimeoutSeconds = Request timeout when downloading the list.
 
     Returns:
         An array containing the response body of the request.
  +/
-ubyte[] getImageList(const string cookie, const uint requestTimeoutSeconds)
+ubyte[] getImageList(const string[string] headers, const uint requestTimeoutSeconds)
 {
     import std.array : Appender;
     import std.net.curl : HTTP;
@@ -635,24 +688,6 @@ ubyte[] getImageList(const string cookie, const uint requestTimeoutSeconds)
     enum postData = `{"jsonrpc":"2.0","method":"get_user_screens","id":1,"params":{"count":10000}}`;
     enum webform = "application/x-www-form-urlencoded";
     enum initialAppenderSize = 1_048_576;
-
-    immutable headers =
-    [
-        "authority"       : "api.prntscr.com",
-        "pragma"          : "no-cache",
-        "cache-control"   : "no-cache",
-        "accept"          : "application/json, text/javascript, */*; q=0.01",
-        "user-agent"      : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " ~
-            "(KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36",
-        "content-type"    : "application/json",
-        "origin"          : "https://prntscr.com",
-        "sec-fetch-site"  : "same-site",
-        "sec-fetch-mode"  : "cors",
-        "sec-fetch-dest"  : "empty",
-        "referer"         : "https://prntscr.com/gallery.html",
-        "accept-language" : "fr-CA,fr;q=0.9,fr-FR;q=0.8,en-US;q=0.7,en;q=0.6,it;q=0.5,ru;q=0.4",
-        "cookie"          : "__auth=" ~ cookie,
-    ];
 
     auto http = HTTP(url);
     immutable requestTimeout = requestTimeoutSeconds.seconds;
