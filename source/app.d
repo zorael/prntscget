@@ -339,6 +339,9 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images, const JSONValue listJS
         import std.file : exists;
         import std.path : buildPath, extension;
 
+        // Break early to cover the case of numToDownload == 0
+        if (images.data.length == config.numToDownload) break;
+
         immutable url = imageJSON["url"].str;
         immutable filename = imageJSON["date"].str
             .replace(" ", "_")
