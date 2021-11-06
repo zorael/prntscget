@@ -133,6 +133,7 @@ int run(string[] args)
 {
     import std.algorithm.comparison : min;
     import std.array : array;
+    import std.datetime.systime : Clock;
     import std.file : exists;
     import std.json : parseJSON;
     import std.range : drop, take;
@@ -249,9 +250,13 @@ int run(string[] args)
     writefln("total images to download: %s -- this will take a MINIMUM of %s.",
         images.data.length, eta);
 
+    auto before = Clock.currTime;
     downloadAllImages(imageSelection, config, headers);
+    auto after = Clock.currTime;
 
-    writeln("done.");
+    before.fracSecs = 0.msecs;
+    after.fracSecs = 0.msecs;
+    writeln("done. actual total time elapsed: ", (after-before));
     return ShellReturn.success;
 }
 
