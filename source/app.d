@@ -498,13 +498,12 @@ void downloadAllImages(const RemoteImage[] images,
 
                 case 403:  // HTTP Forbidden
                     // Throttled?
-                    write(" !", code, "! ");
+                    write(" !", code, '!');
                     stdout.flush();
                     continue retryloop;
 
                 default:
-                    //write(" ?", code, "? ");
-                    write('.');
+                    write(" ?", code, '?');
                     stdout.flush();
                     continue retryloop;
                 }
@@ -512,21 +511,21 @@ void downloadAllImages(const RemoteImage[] images,
             catch (CurlTimeoutException e)
             {
                 // Retry
-                write(" (", e.msg, ") ");
+                write(" (", e.msg, ')');
                 stdout.flush();
                 //continue retryloop;
             }
             catch (CurlException e)
             {
                 // Unexpected network error; retry
-                write(" (", e.msg, ") ");
+                write(" (", e.msg, ')');
                 stdout.flush();
                 //continue retryloop;
             }
             /*catch (HTTPStatusException e)
             {
                 // 404?
-                write(" !", e.msg, "! ");
+                write(" !", e.msg, '!');
                 stdout.flush();
                 //continue retryloop;
             }*/
