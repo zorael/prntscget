@@ -30,7 +30,7 @@ struct RemoteImage
     size_t number;
 
     /// Constructor.
-    this(const string url, const string localPath, const size_t number)
+    this(const string url, const string localPath, const size_t number) pure @safe @nogc nothrow
     {
         this.url = url;
         this.localPath = localPath;
@@ -266,7 +266,7 @@ int run(string[] args)
     Returns:
         [std.getopt.GetoptResult] as returned by the call to [std.getopt.getopt].
  +/
-auto handleGetopt(ref string[] args, out Configuration config)
+auto handleGetopt(ref string[] args, out Configuration config) /*@safe*/
 {
     import std.getopt : getopt, getoptConfig = config;
 
@@ -540,7 +540,7 @@ void downloadAllImages(const RemoteImage[] images,
     Returns:
         A `string[string]` associative array of headers.
  +/
-string[string] buildHeaders()
+string[string] buildHeaders() pure @safe nothrow
 {
     return
     [
@@ -625,7 +625,7 @@ int downloadImage(ref Appender!(ubyte[]) buffer,
     Params:
         fileContents = Contents of a (possibly) JPEG file.
  +/
-bool hasValidJPEGEnding(const ubyte[] fileContents)
+bool hasValidJPEGEnding(const ubyte[] fileContents) pure @safe @nogc nothrow
 {
     import std.algorithm.searching : endsWith;
 
@@ -640,7 +640,7 @@ bool hasValidJPEGEnding(const ubyte[] fileContents)
     Params:
         fileContents = Contents of a (possibly) PNG file.
  +/
-bool hasValidPNGEnding(const ubyte[] fileContents)
+bool hasValidPNGEnding(const ubyte[] fileContents) pure @safe @nogc nothrow
 {
     import std.algorithm.searching : endsWith;
 
@@ -660,7 +660,7 @@ bool hasValidPNGEnding(const ubyte[] fileContents)
         `true` if the directory already exists or if it was succesfully created;
         `false` if it could not be.
  +/
-bool ensureImageDirectory(const string targetDirectory)
+bool ensureImageDirectory(const string targetDirectory) @safe
 {
     import std.file : exists, isDir, mkdir;
 
@@ -739,7 +739,7 @@ ubyte[] getImageList(const string[string] headers, const uint requestTimeoutSeco
     Returns:
         Either the singular or the plural form, based on the value of `num`.
  +/
-T plurality(T, N)(N num, T singular, T plural)
+T plurality(T, N)(N num, T singular, T plural) pure @safe @nogc nothrow
 {
     return ((num == 1) || (num == -1)) ? singular : plural;
 }
