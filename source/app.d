@@ -398,7 +398,7 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images,
             scope(exit) stdout.flush();
 
             existingFile.seek(seekPos);
-            const existingFileEnding = existingFile.rawRead(buf);
+            const existingFileEnding = existingFile.rawRead(buf[]);
 
             if (hasValidJPEGEnding(existingFileEnding) || hasValidPNGEnding(existingFileEnding))
             {
