@@ -437,7 +437,7 @@ void downloadAllImages(const RemoteImage[] images,
     import std.array : Appender;
     import core.time : msecs, seconds;
 
-    enum initialAppenderSize = 1_048_576 * 2;
+    enum initialAppenderSize = 1_048_576 * 4;
 
     immutable delayBetweenImages = (cast(int)(1000 * config.delayBetweenImagesSeconds)).msecs;
     immutable requestTimeout = config.requestTimeoutSeconds.seconds;
