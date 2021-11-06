@@ -505,29 +505,29 @@ void downloadAllImages(const RemoteImage[] images,
             {
                 // Retry
                 write(" (", e.msg, ") ");
-                //stdout.flush();
-                //continue imageloop;
+                stdout.flush();
+                //continue retryloop;
             }
             catch (CurlException e)
             {
                 // Unexpected network error; retry
                 write(" (", e.msg, ") ");
-                //stdout.flush();
-                //continue imageloop;
+                stdout.flush();
+                //continue retryloop;
             }
             /*catch (HTTPStatusException e)
             {
                 // 404?
                 write(" !", e.msg, "! ");
                 stdout.flush();
-                //continue imageloop;
+                //continue retryloop;
             }*/
             catch (Exception e)
             {
                 writeln();
                 writeln(e);
                 writeln("FIXME: add a catch for this type of exception");
-                //continue imageloop;
+                //continue retryloop;
             }
         }
     }
