@@ -86,7 +86,6 @@ enum ShellReturn : int
     failedToFetchList = 2,  /// The JSON list of images could not be fetched from server.
     imageJSONNotFound = 3,  /// The JSON list file could not be found.
     targetDirNotADir  = 4,  /// Target directory is a file or other non-directory.
-    noCookieInJSON    = 5,  /// The JSON file is old and does not have a cookie saved in it.
 }
 
 
@@ -158,7 +157,7 @@ int run(string[] args)
         import std.algorithm.searching : canFind;
         import std.stdio : File;
 
-        headers = buildHeaders(config.cookie);
+        headers = buildHeaders();
 
         writefln(`fetching image list and saving into "%s"...`, config.listFile);
         const listFileContents = getImageList(headers, config.requestTimeoutSeconds);
@@ -170,7 +169,6 @@ int run(string[] args)
         }
 
         listJSON = parseJSON(cast(string)listFileContents);
-        listJSON["cookie"] = config.cookie;  // Store the cookie! We need it nowadays.
         immutable total = listJSON["result"]["total"].integer;
         writefln("%d %s found.", total, total.plurality("image", "images"));
         if (!config.dryRun) File(config.listFile, "w").writeln(listJSON.toPrettyString);
@@ -207,13 +205,7 @@ int run(string[] args)
             .readText
             .parseJSON;
 
-        if ("cookie" !in listJSON)
-        {
-            writeln("your JSON file does not contain a cookie and must be regenerated.");
-            return ShellReturn.noCookieInJSON;
-        }
-
-        headers = buildHeaders(listJSON["cookie"].str);
+        headers = buildHeaders();
     }
 
     immutable numImages = cast(size_t)listJSON["result"]["total"].integer;
@@ -538,13 +530,10 @@ void downloadAllImages(const RemoteImage[] images,
     Builds an associative array of HTTP GET headers to use when requesting
     information of images from the server.
 
-    Params:
-        cookie = The gallery `__auth` cookie.
-
     Returns:
         A `string[string]` associative array of headers.
  +/
-string[string] buildHeaders(const string cookie)
+string[string] buildHeaders()
 {
     return
     [
@@ -553,7 +542,7 @@ string[string] buildHeaders(const string cookie)
         "accept-language" : "en-US,en;q=0.5",
         "accept-encoding" : "gzip, deflate, br",
         "dnt"             : "1",
-        "cookie"          : "G_ENABLED_IDPS=google; G_AUTHUSER_H=0; auth_=" ~ cookie,
+        "cookie"          : "G_ENABLED_IDPS=google; G_AUTHUSER_H=0", //; auth_=" ~ cookie,
         "upgrade-insecure-requests" : "1",
         "sec-fetch-dest"  : "document",
         "sec-fetch-mode"  : "navigate",
