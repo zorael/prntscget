@@ -62,8 +62,11 @@ struct Configuration
     /// How many seconds to wait between image downloads.
     double delayBetweenImagesSeconds = 1.0;
 
-    /// The number of images to skip when downloading (e.g. the index starting position).
-    uint startingImagePosition;
+    /// The offset number of images in the list to skip considering.
+    uint imageOffset;
+
+    /// The number of images to effectively skip when downloading (e.g. the index starting position).
+    uint imagesToSkip;
 
     /// How many images to download, ignoring duplicates.
     uint numToDownload = uint.max;
@@ -132,7 +135,7 @@ int run(string[] args)
     import std.array : array;
     import std.file : exists;
     import std.json : parseJSON;
-    import std.range : take;
+    import std.range : drop, take;
     import std.stdio : writefln, writeln;
     import core.time : msecs;
 
@@ -234,6 +237,7 @@ int run(string[] args)
 
     const imageSelection = images.data
         .array
+        .drop(config.imagesToSkip)
         .take(min(config.numToDownload, numImages));
 
     immutable delayBetweenImages = (cast(int)(1000 * config.delayBetweenImagesSeconds)).msecs;
@@ -277,9 +281,12 @@ auto handleGetopt(ref string[] args, out Configuration config)
         "d|dir",
             "Target image directory.",
             &config.targetDirectory,
-        "s|start",
-            "Starting image position.",
-            &config.startingImagePosition,
+        "o|offset",
+            "Images to skip considering, before checking for existing images.",
+            &config.imageOffset,
+        "s|skip",
+            "Images to effectively skip downloading, after applying offset and checking for existing files.",
+            &config.imagesToSkip,
         "n|num",
             "Number of images to download.",
             &config.numToDownload,
@@ -349,7 +356,7 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images,
     auto range = listJSON["result"]["screens"]
         .array
         .retro
-        .drop(config.startingImagePosition)
+        .drop(config.imageOffset)
         .enumerate;
 
     foreach (immutable i, imageJSON; range)
@@ -406,7 +413,7 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images,
             }
         }
 
-        images ~= RemoteImage(url, localPath, (i + config.startingImagePosition));
+        images ~= RemoteImage(url, localPath, (i + config.imageOffset));
     }
 
     return numExistingImages;
