@@ -701,7 +701,7 @@ ubyte[] getImageList(const string[string] headers, const uint requestTimeoutSeco
     enum url = "https://api.prntscr.com/v1/";
     enum postData = `{"jsonrpc":"2.0","method":"get_user_screens","id":1,"params":{"count":10000}}`;
     enum webform = "application/x-www-form-urlencoded";
-    enum initialAppenderSize = 1_048_576;
+    enum initialAppenderSize = 1_048_576 * 2;
 
     auto http = HTTP(url);
     immutable requestTimeout = requestTimeoutSeconds.seconds;
