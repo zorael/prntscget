@@ -187,7 +187,18 @@ int run(string[] args)
         return ShellReturn.targetDirNotADir;
     }
 
-    if (listJSON == JSONValue.init)  // (listJSON.type == JSONType.null_)
+    static if (__VERSION__ >= 2087)
+    {
+        import std.json : JSONType;
+        alias jsonNullType = JSONType.null_;
+    }
+    else
+    {
+        import std.json : JSON_TYPE;
+        alias jsonNullType = JSON_TYPE.NULL;
+    }
+
+    if (listJSON.type == jsonNullType)
     {
         import std.file : readText;
 
