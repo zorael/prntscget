@@ -542,19 +542,18 @@ string[string] buildHeaders(const string cookie)
 {
     return
     [
-        "authority"       : "api.prntscr.com",
-        "pragma"          : "no-cache",
-        "cache-control"   : "no-cache",
-        "accept"          : "application/json, text/javascript, */*; q=0.01",
         "user-agent"      : "Mozilla/5.0 (X11; Linux x86_64; rv:93.0) Gecko/20100101 Firefox/93.0",
-        "content-type"    : "application/json",
-        "origin"          : "https://image.prntscr.com",
-        "sec-fetch-site"  : "same-site",
-        "sec-fetch-mode"  : "cors",
-        "sec-fetch-dest"  : "empty",
-        "referer"         : "https://prntscr.com",
-        "accept-language" : "fr-CA,fr;q=0.9,fr-FR;q=0.8,en-US;q=0.7,en;q=0.6,it;q=0.5,ru;q=0.4",
-        "cookie"          : "__auth=" ~ cookie,
+        "accept"          : "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "accept-language" : "en-US,en;q=0.5",
+        "accept-encoding" : "gzip, deflate, br",
+        "dnt"             : "1",
+        "cookie"          : "G_ENABLED_IDPS=google; G_AUTHUSER_H=0; auth_=" ~ cookie,
+        "upgrade-insecure-requests" : "1",
+        "sec-fetch-dest"  : "document",
+        "sec-fetch-mode"  : "navigate",
+        "sec-fetch-site"  : "none",
+        "sec-fetch-user"  : "?1",
+        "sec-GPC"         : "1",
     ];
 }
 
