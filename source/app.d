@@ -320,7 +320,6 @@ void printHelp(GetoptResult results, const string[] args)
     import std.format : format;
     import std.getopt : defaultGetoptPrinter;
     import std.path : baseName;
-    import std.stdio : writeln;
 
     enum banner = "prntscget v%d.%d.%d%s, built on %s".format(
         PrntscgetSemVer.majorVersion,
@@ -329,9 +328,8 @@ void printHelp(GetoptResult results, const string[] args)
         PrntscgetSemVerPrerelease,
         __TIMESTAMP__);
 
-    writeln(banner);
-
-    immutable usageLine = "\nusage: %s [options]\n".format(args[0].baseName);
+    immutable usageLine = "%s\n\nusage: %s [options]\n"
+        .format(banner, args[0].baseName);
     defaultGetoptPrinter(usageLine, results.options);
 }
 
