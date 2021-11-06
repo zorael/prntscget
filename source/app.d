@@ -172,7 +172,7 @@ int run(string[] args)
             return ShellReturn.failedToFetchList;
         }
 
-        listJSON = parseJSON(cast(string)listFileContents);
+        listJSON = parseJSON(listFileContents);
         listJSON["cookie"] = config.cookie;  // Store the cookie! We need it nowadays.
         immutable total = listJSON["result"]["total"].integer;
         writefln("%d %s found.", total, total.plurality("image", "images"));
@@ -699,7 +699,7 @@ bool ensureImageDirectory(const string targetDirectory) @safe
     Returns:
         An array containing the response body of the request.
  +/
-ubyte[] getImageList(const string[string] headers, const uint requestTimeoutSeconds)
+string getImageList(const string[string] headers, const uint requestTimeoutSeconds)
 {
     import std.array : Appender;
     import std.net.curl : HTTP;
@@ -735,7 +735,7 @@ ubyte[] getImageList(const string[string] headers, const uint requestTimeoutSeco
     http.perform();
     if (http.statusLine.code != 200) return null;
 
-    return sink.data;
+    return cast(string)sink.data;
 }
 
 
