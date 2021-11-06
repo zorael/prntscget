@@ -448,10 +448,15 @@ void downloadAllImages(const RemoteImage[] images,
     imageloop:
     foreach (immutable i, const image; images)
     {
+        import std.stdio : writeln;
+
+        scope(exit) writeln();
+
+        retryloop:
         foreach (immutable retry; 0..config.retriesPerFile)
         {
             import std.net.curl : CurlException, CurlTimeoutException; //, HTTPStatusException;
-            import std.stdio : stdout, write, writeln;
+            import std.stdio : stdout, write;
 
             try
             {
@@ -475,53 +480,54 @@ void downloadAllImages(const RemoteImage[] images,
                 {
                 case 200:
                     // HTTP OK
-                    writeln("ok");
+                    write("ok");
+                    //stdout.flush();
                     continue imageloop;
 
                 case 0:
                     // magic number, non-image file was saved
                     goto default;
 
-                case 403:
-                    // HTTP Forbidden, probable cookie error
+                case 403:  // HTTP Forbidden
+                    // Throttled?
                     write(" !", code, "! ");
                     stdout.flush();
-                    break;
-
-                case 520:
-                    // HTTP Origin Error, probable header error
-                    goto case 403;
+                    continue retryloop;
 
                 default:
+                    //write(" ?", code, "? ");
                     write('.');
                     stdout.flush();
-                    break;
+                    continue retryloop;
                 }
             }
             catch (CurlTimeoutException e)
             {
                 // Retry
-                write('.');
-                writeln(e.msg);
-                stdout.flush();
+                write(" (", e.msg, ") ");
+                //stdout.flush();
+                //continue imageloop;
             }
             catch (CurlException e)
             {
                 // Unexpected network error; retry
-                write('.');
-                writeln(e.msg);
-                stdout.flush();
+                write(" (", e.msg, ") ");
+                //stdout.flush();
+                //continue imageloop;
             }
             /*catch (HTTPStatusException e)
             {
                 // 404?
-                write('!');
+                write(" !", e.msg, "! ");
                 stdout.flush();
+                //continue imageloop;
             }*/
             catch (Exception e)
             {
                 writeln();
-                writeln(e.msg);
+                writeln(e);
+                writeln("FIXME: add a catch for this type of exception");
+                //continue imageloop;
             }
         }
     }
