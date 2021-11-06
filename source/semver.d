@@ -12,7 +12,7 @@ enum PrntscgetSemVer
 {
     majorVersion = 0,  /// SemVer major version of the program.
     minorVersion = 1,  /// SemVer minor version of the program.
-    patchVersion = 2,  /// SemVer patch version of the program.
+    patchVersion = 3,  /// SemVer patch version of the program.
 }
 
 
