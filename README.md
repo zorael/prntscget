@@ -51,11 +51,11 @@ Pass this value to the program with the `-c` switch.
 $ ./prntscget -c thesecretsixtyfourletterauthcookiestringgoeshere
 ```
 
-This fetches a list of 10,000 of your images and saves it to a file in the current directory (default `target.json`), then starts downloading the images therein.
+This fetches a list of 10,000 of your images and saves it to a file in the current directory (default `target.json`), then starts downloading the images listed therein.
 
 Subsequent executions of the program will reuse this file, so you only need to supply the cookie once, or whenever you want to update the list with new images. If the process was interrupted it will resume downloading where it previously stopped.
 
-> Note that the cookie should be kept secret. Furthermore it is saved to this file, so spreading it to others can give them access to your gallery.
+> Note that the cookie should be kept secret. Sharing it (or the `target.json` file that contains it) with others will grant them access to your gallery.
 
 ## License
 
