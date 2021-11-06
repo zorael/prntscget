@@ -459,7 +459,14 @@ void downloadAllImages(const RemoteImage[] images,
 
             try
             {
-                if (!config.dryRun && (i != 0) && ((i != (images.length+(-1))) || (i == 1)))
+                immutable firstRetry = (retry == 0);
+                immutable firstImage = (i == 0);
+
+                if (config.dryRun || (firstImage && firstRetry))
+                {
+                    // Do nothing
+                }
+                else
                 {
                     import core.thread : Thread;
                     Thread.sleep(delayBetweenImages);
