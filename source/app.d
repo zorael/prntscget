@@ -492,7 +492,9 @@ void downloadAllImages(const RemoteImage[] images,
 
                 case 0:
                     // magic number, non-image file was saved
-                    goto default;
+                    write('.');
+                    stdout.flush();
+                    continue retryloop;
 
                 case 403:  // HTTP Forbidden
                     // Throttled?
