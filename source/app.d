@@ -15,6 +15,7 @@ import core.time : Duration;
 public:
 
 
+// RemoteImage
 /++
     Embodies the notion of an image to be downloaded.
  +/
@@ -39,6 +40,7 @@ struct RemoteImage
 }
 
 
+// Configuration
 /++
     Aggregate of values supplied at the command line.
  +/
@@ -82,6 +84,7 @@ struct Configuration
 }
 
 
+// ShellReturn
 /++
     Shell return values.
  +/
@@ -95,6 +98,7 @@ enum ShellReturn : int
 }
 
 
+// MagicNumber
 /++
     Magic numbers.
  +/
@@ -105,6 +109,7 @@ enum MagicNumber : int
 }
 
 
+// main
 /++
     Program entry point.
 
@@ -133,6 +138,7 @@ int main(string[] args)
 }
 
 
+// run
 /++
     Program main logic.
 
@@ -275,6 +281,7 @@ int run(string[] args)
 }
 
 
+// handleGetopt
 /++
     Handles getopt arguments passed to the program.
 
@@ -328,6 +335,7 @@ auto handleGetopt(ref string[] args, out Configuration config) /*@safe*/
 }
 
 
+// printHelp
 /++
     Prinst the `getopt` help screen to the terminal.
 
@@ -355,6 +363,7 @@ void printHelp(GetoptResult results, const string[] args)
 }
 
 
+// enumerateImages
 /++
     Enumerate images, skipping existing ones.
 
@@ -441,6 +450,8 @@ uint enumerateImages(ref Appender!(RemoteImage[]) images,
     return numExistingImages;
 }
 
+
+// downloadAllImages
 /++
     Downloads all images in the passed `images` list.
 
@@ -572,6 +583,7 @@ void downloadAllImages(const RemoteImage[] images,
 }
 
 
+// buildHeaders
 /++
     Builds an associative array of HTTP GET headers to use when requesting
     information of images from the server.
@@ -599,6 +611,7 @@ string[string] buildHeaders() pure @safe nothrow
 }
 
 
+// downloadImage
 /++
     Downloads an image from the `prnt.sc` (`prntscr.com`) server.
 
@@ -667,6 +680,7 @@ int downloadImage(ref Appender!(ubyte[]) buffer,
 }
 
 
+// hasValidJPEGEnding
 /++
     Detects whether or not a passed array of bytes has a valid JPEG ending.
 
@@ -682,6 +696,7 @@ bool hasValidJPEGEnding(const ubyte[] fileContents) pure @safe @nogc nothrow
 }
 
 
+// hasValidPNGEnding
 /++
     Detects whether or not a passed array of bytes has a valid PNG ending.
 
@@ -697,6 +712,7 @@ bool hasValidPNGEnding(const ubyte[] fileContents) pure @safe @nogc nothrow
 }
 
 
+// ensureImageDirectory
 /++
     Ensures the target image directory exists, creating it if it does not and
     returning false if it fails to.
@@ -726,6 +742,7 @@ bool ensureImageDirectory(const string targetDirectory) @safe
 }
 
 
+// getImageList
 /++
     Fetches the JSON list of images for a passed cookie from the `prnt.sc` (`prntscr.com`) server.
 
@@ -774,6 +791,7 @@ string getImageList(const string[string] headers, const uint requestTimeoutSecon
 }
 
 
+// plurality
 /++
     Chooses between two values based on if the passed numeric value is one or many.
 
