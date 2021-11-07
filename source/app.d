@@ -74,6 +74,9 @@ struct Configuration
     /// `__auth` cookie string specified at the command line.
     string cookie;
 
+    /// Whether or not to always keep downloaded files, even if they're not valid images.
+    bool alwaysKeep;
+
     /// Whether or not this is a dry run.
     bool dryRun;
 }
@@ -307,6 +310,9 @@ auto handleGetopt(ref string[] args, out Configuration config) /*@safe*/
         "t|timeout",
             "Download attempt read timeout, in seconds.",
             &config.requestTimeoutSeconds,
+        "always-keep",
+            "Whether or not to always keep downloaded files, even if they're not valid images.",
+            &config.alwaysKeep,
         "dry-run",
             "Download nothing, only echo what would be done.",
             &config.dryRun,
