@@ -25,16 +25,17 @@ $ dub build
 ```
 usage: prntscget [options]
 
--c  --cookie Cookie to download gallery of (see README).
--f    --file Filename to save the JSON list of images to.
--d     --dir Target image directory.
--o  --offset Images to skip considering, before checking for existing images.
--s    --skip Images to effectively skip downloading, after applying offset and checking for existing files.
--n     --num Number of images to download.
--r --retries How many times to retry downloading an image.
--D   --delay Delay between image downloads, in seconds.
--t --timeout Download attempt read timeout, in seconds.
-   --dry-run Download nothing, only echo what would be done.
+-c      --cookie Cookie to download gallery of (see README).
+-f        --file Filename to save the JSON list of images to.
+-d         --dir Target image directory.
+-o      --offset Images to skip considering, before checking for existing images.
+-s        --skip Images to effectively skip downloading, after applying offset and checking for existing files.
+-n         --num Number of images to download.
+-r     --retries How many times to retry downloading an image.
+-D       --delay Delay between image downloads, in seconds.
+-t     --timeout Download attempt read timeout, in seconds.
+   --always-keep Whether or not to always keep downloaded files, even if they're not valid images.
+       --dry-run Download nothing, only echo what would be done.
 ```
 
 ### Gallery access cookie
