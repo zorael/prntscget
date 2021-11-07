@@ -757,9 +757,7 @@ string getImageList(const string[string] headers, const uint requestTimeoutSecon
     };
 
     http.perform();
-    if (http.statusLine.code != 200) return null;
-
-    return cast(string)sink.data;
+    return (http.statusLine.code == 200) ? cast(string)sink.data : string.init;
 }
 
 
