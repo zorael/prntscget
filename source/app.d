@@ -93,6 +93,15 @@ enum ShellReturn : int
 
 
 /++
+    Magic numbers.
+ +/
+enum MagicNumber : int
+{
+    fileIsNotAnImage  = -1,  // Saved file was not a JPEG nor a PNG.
+}
+
+
+/++
     Program entry point.
 
     Merely passes execution to [run], wrapped in a try-catch.
