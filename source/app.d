@@ -51,7 +51,7 @@ struct Configuration
      +  How many times to try downloading a file before admitting failure and
      +  proceeding with the next one.
      +/
-    uint retriesPerFile = 100;
+    uint retriesPerFile = 20;
 
     /// Directory to save images to.
     string targetDirectory = "images";
