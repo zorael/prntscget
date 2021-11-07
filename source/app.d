@@ -100,7 +100,7 @@ enum ShellReturn : int
  +/
 enum MagicNumber : int
 {
-    fileIsNotAnImage  = -1,  // Saved file was not a JPEG nor a PNG.
+    fileIsNotAnImage  = -1,  /// Saved file was not a JPEG nor a PNG.
 }
 
 
