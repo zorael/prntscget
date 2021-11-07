@@ -101,6 +101,7 @@ enum ShellReturn : int
 enum MagicNumber : int
 {
     fileIsNotAnImage  = -1,  /// Saved file was not a JPEG nor a PNG.
+    dryRunSkip        = -2,  /// A download was skipped because of a dry run.
 }
 
 
@@ -500,7 +501,7 @@ void downloadAllImages(const RemoteImage[] images,
                     stdout.flush();
                 }
 
-                immutable code = config.dryRun ? 200 :
+                immutable code = config.dryRun ? MagicNumber.dryRunSkip :
                     downloadImage(buffer, image.url, image.localPath, requestTimeout, headers, config.alwaysKeep);
 
                 switch (code)
@@ -508,7 +509,7 @@ void downloadAllImages(const RemoteImage[] images,
                 case 200:
                     // HTTP OK
                     write("ok");
-                    //stdout.flush();
+                    //stdout.flush();  // scopeguard writelns
                     continue imageloop;
 
                 case MagicNumber.fileIsNotAnImage:
@@ -519,6 +520,12 @@ void downloadAllImages(const RemoteImage[] images,
                     stdout.flush();
                     if (config.alwaysKeep) continue imageloop;
                     else continue retryloop;
+
+                case MagicNumber.dryRunSkip:
+                    // magic number, it is a dry run
+                    write("skip");
+                    //stdout.flush();  // scopeguard writelns
+                    continue imageloop;
 
                 case 403:  // HTTP Forbidden
                     // Throttled?
