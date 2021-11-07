@@ -623,9 +623,7 @@ int downloadImage(ref Appender!(ubyte[]) buffer,
     const string[string] headers,
     const bool alwaysKeep)
 {
-    import std.array : Appender;
     import std.net.curl : HTTP;
-    import std.stdio : File;
 
     auto http = HTTP(url);
     http.dnsTimeout = requestTimeout;
@@ -654,6 +652,7 @@ int downloadImage(ref Appender!(ubyte[]) buffer,
 
         if (validImage || alwaysKeep)
         {
+            import std.stdio : File;
             File(imagePath, "w").rawWrite(buffer.data);
         }
 
