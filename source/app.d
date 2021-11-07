@@ -494,7 +494,7 @@ void downloadAllImages(const RemoteImage[] images,
                 }
 
                 immutable code = config.dryRun ? 200 :
-                    downloadImage(buffer, image.url, image.localPath, requestTimeout, headers);
+                    downloadImage(buffer, image.url, image.localPath, requestTimeout, headers, config.alwaysKeep);
 
                 switch (code)
                 {
@@ -504,11 +504,14 @@ void downloadAllImages(const RemoteImage[] images,
                     //stdout.flush();
                     continue imageloop;
 
-                case 0:
+                case MagicNumber.fileIsNotAnImage:
                     // magic number, non-image file was saved
+                    // If config.alwaysKeep is true we should proceed with the next image;
+                    // otherwise retry this one.
                     write('.');
                     stdout.flush();
-                    continue retryloop;
+                    if (config.alwaysKeep) continue imageloop;
+                    else continue retryloop;
 
                 case 403:  // HTTP Forbidden
                     // Throttled?
@@ -591,15 +594,20 @@ string[string] buildHeaders() pure @safe nothrow
         imagePath = Filename to save the downloaded image to.
         requestTimeout = Timeout to use when downloading.
         headers = HTTP GET headers to supply when downloading.
+        alwaysKeep = Whether or not to always keep downloaded files,
+            even if they're not valid images.
 
     Returns:
         The HTTP code encountered when attempting to download the image.
+        The magic number [MagicNumber.fileIsNotAnImage] is returned if the
+        downloaded file was detected as not an image.
  +/
 int downloadImage(ref Appender!(ubyte[]) buffer,
     const string url,
     const string imagePath,
     const Duration requestTimeout,
-    const string[string] headers)
+    const string[string] headers,
+    const bool alwaysKeep)
 {
     import std.array : Appender;
     import std.net.curl : HTTP;
@@ -628,13 +636,18 @@ int downloadImage(ref Appender!(ubyte[]) buffer,
 
     if (http.statusLine.code == 200)
     {
-        if (!hasValidPNGEnding(buffer.data) && !hasValidJPEGEnding(buffer.data))
+        immutable validImage = (hasValidPNGEnding(buffer.data) || hasValidJPEGEnding(buffer.data));
+
+        if (validImage || alwaysKeep)
         {
-            // Interrupted download? Cloudflare error page?
-            return 0;
+            File(imagePath, "w").rawWrite(buffer.data);
         }
 
-        File(imagePath, "w").rawWrite(buffer.data);
+        if (!validImage)
+        {
+            // Interrupted download? Cloudflare error page?
+            return MagicNumber.fileIsNotAnImage;
+        }
     }
 
     return http.statusLine.code;
