@@ -188,7 +188,14 @@ int run(string[] args)
     }
     else if (!config.listFile.exists)
     {
-        writefln(`image list JSON file "%s" does not exist.`, config.listFile);
+        writefln(`image list file "%s" does not exist.`, config.listFile);
+
+        if (config.listFile == Configuration.init.listFile)
+        {
+            // No list file was probably specified
+            writeln("see the README on how to provide a cookie with `-c` to download your gallery list of images.");
+        }
+
         return ShellReturn.imageJSONNotFound;
     }
 
