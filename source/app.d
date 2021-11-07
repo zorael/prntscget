@@ -141,7 +141,6 @@ int main(string[] args)
 int run(string[] args)
 {
     import std.algorithm.comparison : min;
-    import std.array : array;
     import std.datetime.systime : Clock;
     import std.file : exists;
     import std.json : parseJSON;
@@ -163,14 +162,12 @@ int run(string[] args)
     JSONValue listJSON;
 
     /// HTTP GET request headers to use when downloading
-    string[string] headers;
+    immutable headers = buildHeaders();
 
     if (config.cookie.length)
     {
         import std.algorithm.searching : canFind;
         import std.stdio : File;
-
-        headers = buildHeaders();
 
         writefln(`fetching image list and saving into "%s"...`, config.listFile);
         const listFileContents = getImageList(headers, config.requestTimeoutSeconds);
@@ -217,8 +214,6 @@ int run(string[] args)
         listJSON = config.listFile
             .readText
             .parseJSON;
-
-        headers = buildHeaders();
     }
 
     immutable numImages = cast(size_t)listJSON["result"]["total"].integer;
@@ -230,7 +225,8 @@ int run(string[] args)
     }
 
     Appender!(RemoteImage[]) images;
-    images.reserve(min(numImages, config.numToDownload));
+    immutable numImagesToDownload = min(numImages, config.numToDownload);
+    images.reserve(numImagesToDownload);
     immutable numExistingImages = enumerateImages(images, listJSON, config);
 
     if (!images.data.length)
@@ -238,17 +234,15 @@ int run(string[] args)
         writefln("\nno images to fetch -- all %d are already downloaded.", numImages);
         return ShellReturn.success;
     }
-
-    if (numExistingImages > 0)
+    else if (numExistingImages > 0)
     {
         writefln(" (skipping %d %s already in directory)", numExistingImages,
             numExistingImages.plurality("image", "images"));
     }
 
     const imageSelection = images.data
-        .array
         .drop(config.imagesToSkip)
-        .take(min(config.numToDownload, numImages));
+        .take(numImagesToDownload);
 
     immutable delayBetweenImages = (cast(int)(1000 * config.delayBetweenImagesSeconds)).msecs;
     immutable eta = (images.data.length + (-1)) * delayBetweenImages;
@@ -262,9 +256,9 @@ int run(string[] args)
     auto before = Clock.currTime;
     downloadAllImages(imageSelection, config, headers);
     auto after = Clock.currTime;
-
     before.fracSecs = 0.msecs;
     after.fracSecs = 0.msecs;
+
     writeln("done. actual total time elapsed: ", (after-before));
     return ShellReturn.success;
 }
