@@ -1,3 +1,9 @@
+# *This does currently not work*
+
+I can no longer sign in. My IP may have been banned, or their service is simply down (and has been down for several days?). The newly-added captcha can be worked around by *always* specifying cookies and browser agent, which is a pain.
+
+I have some uncommitted changes that made it work, prior to everything just returning "forbidden". Will update (and potentially push them) when I know more.
+
 # `prnt.sc` get
 
 This command-line program downloads your Lightshot ([`prnt.sc`](https://prnt.scr)) gallery and saves it to disk.
